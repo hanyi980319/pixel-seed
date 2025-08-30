@@ -2,14 +2,14 @@
 
 import { Button, Typography, Space, Card, Row, Col, Radio, Input, Progress, Divider } from 'antd'
 import { PlayCircleOutlined, CrownOutlined, RobotOutlined, EditOutlined, CheckOutlined, ReloadOutlined, ArrowLeftOutlined, PauseOutlined, ReloadOutlined as RestartOutlined } from '@ant-design/icons'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useGameStore, GameTheme } from '@/lib/store'
-import GameInterface from './GameInterface'
+import Canvas from './Canvas'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
 
-const MainMenu = () => {
+const Menu = () => {
   const {
     selectedTheme,
     customPrompt,
@@ -65,19 +65,19 @@ const MainMenu = () => {
     setLoadingMessage('Initializing generation...')
 
     // 模拟生成进度
-     let currentProgress = 0
-     const interval = setInterval(() => {
-       currentProgress += Math.random() * 15
-       if (currentProgress >= 100) {
-         clearInterval(interval)
-         setLoadingProgress(100)
-         setIsGenerating(false)
-         setShowGameInterface(true) // 显示游戏界面
-         setGameState('playing')
-       } else {
-         setLoadingProgress(Math.round(currentProgress * 100) / 100) // 保留两位小数
-       }
-     }, 200)
+    let currentProgress = 0
+    const interval = setInterval(() => {
+      currentProgress += Math.random() * 15
+      if (currentProgress >= 100) {
+        clearInterval(interval)
+        setLoadingProgress(100)
+        setIsGenerating(false)
+        setShowGameInterface(true) // 显示游戏界面
+        setGameState('playing')
+      } else {
+        setLoadingProgress(Math.round(currentProgress * 100) / 100) // 保留两位小数
+      }
+    }, 200)
   }
 
   const getSelectedThemeInfo = () => {
@@ -98,6 +98,16 @@ const MainMenu = () => {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Title level={1}>PIXEL SEED</Title>
           <Text type="secondary">Grow infinite pixel worlds with an AI seed</Text>
+          <div style={{ marginTop: '1rem' }}>
+            <Button 
+              type="link" 
+              href="/doc" 
+              target="_blank"
+              style={{ color: '#666' }}
+            >
+              📖 查看项目文档
+            </Button>
+          </div>
         </div>
 
         {/* 左右分栏布局 */}
@@ -250,7 +260,7 @@ const MainMenu = () => {
             >
               {showGameInterface ? (
                 <div style={{ height: '600px', position: 'relative' }}>
-                  <GameInterface />
+                  <Canvas />
                 </div>
               ) : !isGenerating ? (
                 <div style={{ height: '100%', minHeight: '400px', display: 'flex', flexDirection: 'column' }}>
@@ -355,6 +365,6 @@ const MainMenu = () => {
       </div>
     </div>
   )
-}
+};
 
-export default MainMenu
+export default Menu;

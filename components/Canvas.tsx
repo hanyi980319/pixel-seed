@@ -1,11 +1,10 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { ArrowLeft, RotateCcw, Settings, Pause, Play } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
-import { useGameStore } from '@/lib/store'
+import { motion } from 'framer-motion';
+import { useEffect, useState, useCallback } from 'react';
+import { useGameStore } from '@/lib/store';
 
-const GameInterface = () => {
+const Canvas = () => {
   const {
     gameData,
     playerPosition,
@@ -206,6 +205,6 @@ const GameInterface = () => {
       />
     </div>
   )
-}
+};
 
-export default GameInterface
+export default Canvas;

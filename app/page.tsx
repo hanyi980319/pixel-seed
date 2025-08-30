@@ -1,11 +1,11 @@
 'use client'
 
-import MainMenu from '@/components/MainMenu'
+import Menu from '@/components/Menu'
 
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <MainMenu />
+      <Menu />
     </main>
   )
 }
