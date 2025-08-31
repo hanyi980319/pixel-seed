@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Skeleton image full size */
+.skeleton-image-full .ant-skeleton {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 /* 像素化图像样式 */
 .pixelated {
   image-rendering: -moz-crisp-edges;

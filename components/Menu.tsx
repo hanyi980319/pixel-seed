@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, Typography, Space, Card, Row, Col, Radio, Input, Progress, Divider } from 'antd'
+import { Button, Typography, Space, Card, Row, Col, Radio, Input, Progress, Divider, Skeleton, Empty } from 'antd'
 import { PlayCircleOutlined, CrownOutlined, RobotOutlined, EditOutlined, CheckOutlined, ReloadOutlined, ArrowLeftOutlined, PauseOutlined, ReloadOutlined as RestartOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useGameStore, GameTheme } from '@/lib/store'
@@ -20,7 +20,12 @@ const Menu = () => {
     loadingMessage,
     setLoadingProgress,
     setLoadingMessage,
-    setGameData
+    gameData,
+    setGameData,
+    isLoading,
+    setLoading,
+    characterType,
+    levelType
   } = useGameStore()
 
   const [showCustomInput, setShowCustomInput] = useState(false)
@@ -51,6 +56,61 @@ const Menu = () => {
       setShowCustomInput(true)
     } else {
       setShowCustomInput(false)
+    }
+  }
+
+  const handleConfirmTheme = async () => {
+    if (selectedTheme === 'custom' && !customPrompt.trim()) {
+      alert('Please enter a custom theme description')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setLoadingProgress(0)
+      setLoadingMessage('Generating your pixel world...')
+      setGameState('loading')
+
+      // 构建请求参数
+      const requestBody = {
+        theme: selectedTheme,
+        prompt: selectedTheme === 'custom' ? customPrompt : getSelectedThemeInfo().description,
+        characterType: characterType,
+        levelType: levelType
+      }
+
+      console.log('Calling API with:', requestBody)
+
+      // 调用后端API
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        setGameData(result.data)
+        setLoadingProgress(100)
+        setLoadingMessage('Generation complete!')
+        // 不直接跳转到游戏界面，而是停留在预览界面
+        setGameState('menu')
+      } else {
+        throw new Error(result.error || 'Generation failed')
+      }
+    } catch (error) {
+      console.error('Generation error:', error)
+      alert(`Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setGameState('menu')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -98,16 +158,6 @@ const Menu = () => {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Title level={1}>PIXEL SEED</Title>
           <Text type="secondary">Grow infinite pixel worlds with an AI seed</Text>
-          <div style={{ marginTop: '1rem' }}>
-            <Button 
-              type="link" 
-              href="/doc" 
-              target="_blank"
-              style={{ color: '#666' }}
-            >
-              📖 查看项目文档
-            </Button>
-          </div>
         </div>
 
         {/* 左右分栏布局 */}
@@ -192,27 +242,27 @@ const Menu = () => {
 
                   {/* 底部按钮 */}
                   <div style={{ marginTop: '16px', textAlign: 'center' }}>
-                    <Button
-                      type="primary"
-                      icon={<CheckOutlined />}
-                      style={{ marginRight: '8px' }}
-                      onClick={() => {
-                        // 确定按钮逻辑
-                        console.log('确定选择主题');
-                      }}
-                    >
-                      Confirm
-                    </Button>
-                    <Button
-                      icon={<ReloadOutlined />}
-                      onClick={() => {
-                        // 重试按钮逻辑
-                        setCustomPrompt('');
-                        setSelectedTheme('epic-fantasy');
-                      }}
-                    >
-                      Reset
-                    </Button>
+                    {!gameData?.character?.url && !gameData?.background?.url ? (
+                      <Button
+                        type="primary"
+                        icon={<CheckOutlined />}
+                        loading={isLoading}
+                        onClick={handleConfirmTheme}
+                      >
+                        Confirm
+                      </Button>
+                    ) : (
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={() => {
+                          // 重试按钮逻辑
+                          setCustomPrompt('');
+                          setSelectedTheme('epic-fantasy');
+                        }}
+                      >
+                        Reset
+                      </Button>
+                    )}
                   </div>
                 </Space>
               </Card>
@@ -271,18 +321,60 @@ const Menu = () => {
                       <div style={{ marginBottom: '8px' }}>
                         <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Character</Text>
                       </div>
-                      <div
-                        style={{
-                          width: '100%',
-                          aspectRatio: '1',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          backgroundImage: 'url(https://gw.alicdn.com/imgextra/i2/O1CN01tyxwk51DM6hF9S6DL_!!6000000000201-2-tps-1024-1024.png)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat'
-                        }}
-                      />
+                      {isLoading ? (
+                        <div
+                          className="skeleton-image-full"
+                          style={{
+                            width: '100%',
+                            aspectRatio: '1',
+                            borderRadius: '8px',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <Skeleton.Image
+                            style={{
+                              width: '100%',
+                              height: '100%'
+                            }}
+
+                            active
+                          />
+                        </div>
+                      ) : (
+                        gameData?.character?.url ? (
+                          <div
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              backgroundImage: `url(${gameData.character.url})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat'
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#f5f5f5'
+                            }}
+                          >
+                            <Empty
+                              image={Empty.PRESENTED_IMAGE_SIMPLE}
+                              description="No Character"
+                              style={{ margin: 0 }}
+                            />
+                          </div>
+                        )
+                      )}
                     </div>
 
                     {/* 右侧：关卡背景 */}
@@ -290,18 +382,59 @@ const Menu = () => {
                       <div style={{ marginBottom: '8px' }}>
                         <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Level Background</Text>
                       </div>
-                      <div
-                        style={{
-                          width: '100%',
-                          aspectRatio: '1',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          backgroundImage: 'url(https://gw.alicdn.com/imgextra/i3/O1CN01hpClje1reVEd2Gkbu_!!6000000005656-2-tps-1024-1024.png)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat'
-                        }}
-                      />
+                      {isLoading ? (
+                        <div
+                          className="skeleton-image-full"
+                          style={{
+                            width: '100%',
+                            aspectRatio: '1',
+                            borderRadius: '8px',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <Skeleton.Image
+                            style={{
+                              width: '100%',
+                              height: '100%'
+                            }}
+                            active
+                          />
+                        </div>
+                      ) : (
+                        gameData?.background?.url ? (
+                          <div
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              backgroundImage: `url(${gameData.background.url})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat'
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#f5f5f5'
+                            }}
+                          >
+                            <Empty
+                              image={Empty.PRESENTED_IMAGE_SIMPLE}
+                              description="No Background"
+                              style={{ margin: 0 }}
+                            />
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
 
