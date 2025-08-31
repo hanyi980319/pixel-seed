@@ -22,8 +22,10 @@ Pixel Seed 是一款实验性 2D 像素风网页游戏，核心创新在于：�
 ### 1. 主题选择系统
 
 #### 1.1 预设主题
-- **史诗魔幻**：包含魔法、龙、城堡、森林等元素
-- **赛博朋克**：包含霓虹灯、机械、未来城市等元素
+- **史诗魔幻 (Epic Fantasy)**：包含魔法、龙、城堡、森林等元素
+- **赛博朋克 (Cyberpunk)**：包含霓虹灯、机械、未来城市等元素
+- **西部世界 (Western World)**：包含牛仔、酒馆、沙漠景观、边疆小镇等元素
+- **海底世界 (Underwater World)**：包含珊瑚礁、深海生物、古代海底文明等元素
 
 #### 1.2 自定义主题
 - 用户可手动输入提示词
@@ -118,9 +120,11 @@ Pixel Seed 是一款实验性 2D 像素风网页游戏，核心创新在于：�
 - **游戏渲染**：混合方案 - 背景使用CSS，角色使用Canvas (已实现)
 - **状态管理**：Zustand 5.0.8 (已实现)
 - **UI组件**：Ant Design 5.27.1 (已实现)
-- **HTTP客户端**：Fetch API (待实现)
+- **HTTP客户端**：Fetch API (已实现)
 - **动画库**：Framer Motion 12.23.12 (已实现)
 - **图标库**：Ant Design Icons 6.0.0 + Lucide React 0.542.0 (已实现)
+- **组件架构**：模块化组件设计，统一导出管理 (已实现)
+- **配置管理**：集中化配置文件管理 (已实现)
 
 ### 后端技术栈
 - **API路由**：Next.js API Routes
@@ -137,6 +141,52 @@ Pixel Seed 是一款实验性 2D 像素风网页游戏，核心创新在于：�
 - **图像处理**：Sharp.js 进行格式转换和优化
 - **并发控制**：Promise.all 并行处理角色和背景生成
 - **参考文档**：GitHub - https://github.com/QwenLM/Qwen-Image
+
+### 组件架构设计 (已实现)
+
+#### 组件目录结构
+```
+components/
+├── Canvas.tsx              # 游戏画布组件
+├── Menu.tsx               # 主菜单组件
+├── config.ts              # 配置文件管理
+├── types.ts               # TypeScript类型定义
+└── ui/                    # UI组件目录
+    ├── ActionButtons.tsx      # 操作按钮组件
+    ├── GameInterface.tsx      # 游戏界面组件
+    ├── ModelSelector.tsx      # 模型选择器组件
+    ├── ProgressIndicator.tsx  # 进度指示器组件
+    ├── ProjectHeader.tsx      # 项目头部组件
+    ├── ThemeCustomizer.tsx    # 主题定制器组件
+    ├── ThemePreview.tsx       # 主题预览组件
+    ├── ThemesList.tsx         # 主题列表组件
+    ├── CircularText/          # 圆形文字组件
+    ├── CurvedLoop/            # 曲线循环组件
+    ├── ScrambleText/          # 文字扰动组件
+    └── index.ts               # 统一导出文件
+```
+
+#### 核心组件功能
+- **Menu.tsx**：主菜单组件，整合所有子组件，管理应用状态
+- **GameInterface.tsx**：游戏界面组件，处理游戏渲染和交互
+- **ProjectHeader.tsx**：项目头部，展示项目名称和描述
+- **ModelSelector.tsx**：AI模型选择和API Key配置
+- **ThemeCustomizer.tsx**：自定义主题名称和提示词输入
+- **ActionButtons.tsx**：创建主题和开始游戏按钮
+- **ThemesList.tsx**：预设主题列表展示和选择
+- **ThemePreview.tsx**：主题预览区域，显示角色和背景
+- **ProgressIndicator.tsx**：生成进度显示
+
+#### 配置管理系统
+- **config.ts**：集中管理预设主题配置
+  - `PresetTheme` 接口定义
+  - `PRESET_THEMES` 预设主题数组
+  - `CONFIG` 全局配置对象
+- **types.ts**：完整的TypeScript类型定义
+  - 所有组件Props接口
+  - 主题和游戏数据类型
+  - 事件处理函数类型
+- **index.ts**：统一导出机制，简化组件导入
 
 ### DashScope API集成细节
 - **请求头配置**：
@@ -230,7 +280,16 @@ flowchart TD
     Restart --> Generate
 ```
 
-## AI生成流程设计 (待实现)
+## AI生成流程设计 (已实现)
+
+### 实现概述
+
+项目已完整实现AI生成流程，包括：
+- **API路由**：`app/api/generate/route.ts` 提供完整的生成服务
+- **前端集成**：`Menu.tsx` 组件中的生成逻辑和状态管理
+- **DashScope集成**：与阿里云Qwen-Image模型的完整对接
+- **错误处理**：完善的异常处理和用户反馈机制
+- **进度显示**：实时的生成进度和状态更新
 
 ### 生成流程时序图
 ```mermaid
@@ -384,6 +443,10 @@ Body:
 - **响应式设计**：移动端适配
 - **游戏循环**：60fps 实时更新
 - **暂停功能**：ESC键暂停/恢复
+- **模块化组件架构**：完整的组件拆分和重构
+- **配置文件管理**：集中化主题配置管理
+- **类型系统**：完整的TypeScript类型定义
+- **统一导出机制**：组件统一导出和管理
 
 ### 待实现功能 🚧
 - **AI生成集成**：DashScope API 接入
@@ -395,7 +458,6 @@ Body:
 ### 技术债务 ⚠️
 - **模拟数据**：当前使用占位符图片，需接入真实AI生成
 - **性能优化**：游戏循环可优化为requestAnimationFrame
-- **类型安全**：部分组件props类型定义待完善
 - **测试覆盖**：缺少单元测试和集成测试
 
 ## 后续扩展计划

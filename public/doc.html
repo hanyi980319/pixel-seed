@@ -5,7 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixel Seed - 项目需求文档</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
+        :root {
+            --primary-color: #0366d6;
+            --secondary-color: #586069;
+            --accent-color: #28a745;
+            --warning-color: #ffd33d;
+            --danger-color: #d73a49;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8fa;
+            --bg-tertiary: #f1f3f4;
+            --border-color: #e1e4e8;
+            --text-primary: #24292e;
+            --text-secondary: #586069;
+            --text-muted: #6a737d;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,51 +37,78 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
             line-height: 1.6;
-            color: #333;
-            background-color: #f5f5f5;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            font-size: 16px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            margin-top: 20px;
-            margin-bottom: 20px;
+            padding: 0;
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-lg);
+            margin-top: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .content {
+            padding: 32px 40px;
         }
         
         .header {
             text-align: center;
-            padding: 40px 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 64px 40px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #4c63d2 100%);
             color: white;
-            border-radius: 8px 8px 0 0;
-            margin: -20px -20px 40px -20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') repeat;
+            opacity: 0.1;
         }
         
         .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
         }
         
         .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
+            font-size: 1.25rem;
+            opacity: 0.95;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            margin: 0 auto;
         }
         
         .nav {
             position: sticky;
             top: 0;
-            background: white;
-            padding: 15px 0;
-            border-bottom: 2px solid #eee;
-            margin-bottom: 30px;
+            background: var(--bg-primary);
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(8px);
             z-index: 100;
+            box-shadow: var(--shadow-sm);
         }
         
         .nav ul {
@@ -65,183 +116,559 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 20px;
+            gap: 8px;
+            max-width: 1000px;
+            margin: 0 auto;
         }
         
         .nav a {
-            color: #667eea;
+            color: var(--text-secondary);
             text-decoration: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            transition: all 0.3s ease;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
             font-weight: 500;
+            font-size: 14px;
+            border: 1px solid transparent;
+            white-space: nowrap;
         }
         
         .nav a:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
+            background: var(--bg-tertiary);
+            color: var(--primary-color);
+            border-color: var(--border-color);
+            transform: translateY(-1px);
         }
         
-        h1, h2, h3, h4 {
-            color: #2c3e50;
-            margin-top: 30px;
-            margin-bottom: 15px;
+        .nav a:active {
+            transform: translateY(0);
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-primary);
+            font-weight: 600;
+            line-height: 1.25;
+            margin-top: 32px;
+            margin-bottom: 16px;
         }
         
         h1 {
-            font-size: 2.5em;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-top: 0;
+            position: relative;
+        }
+        
+        h1::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--primary-color);
         }
         
         h2 {
-            font-size: 2em;
-            color: #667eea;
-            border-left: 4px solid #667eea;
-            padding-left: 15px;
+            font-size: 1.875rem;
+            color: var(--text-primary);
+            border-left: 4px solid var(--primary-color);
+            padding-left: 16px;
+            margin-top: 48px;
         }
         
         h3 {
-            font-size: 1.5em;
-            color: #764ba2;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-top: 32px;
         }
         
         h4 {
-            font-size: 1.2em;
-            color: #555;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-top: 24px;
+        }
+        
+        h5 {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+        }
+        
+        h6 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         p {
-            margin-bottom: 15px;
-            text-align: justify;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            line-height: 1.7;
         }
         
         ul, ol {
-            margin-left: 30px;
-            margin-bottom: 15px;
+            margin-left: 24px;
+            margin-bottom: 16px;
+            padding-left: 8px;
         }
         
         li {
             margin-bottom: 8px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        li::marker {
+            color: var(--primary-color);
+        }
+        
+        strong {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        em {
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+        
+        blockquote {
+            background: var(--bg-tertiary);
+            border-left: 4px solid var(--primary-color);
+            margin: 24px 0;
+            padding: 20px 24px;
+            border-radius: var(--radius-sm);
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+        
+        blockquote p {
+            margin-bottom: 0;
         }
         
         .mermaid {
             text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+            margin: 32px 0;
+            padding: 24px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
         }
         
         code {
-            background: #f4f4f4;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: var(--bg-tertiary);
+            color: var(--danger-color);
+            padding: 3px 6px;
+            border-radius: var(--radius-sm);
+            font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace;
+            font-size: 0.875em;
+            border: 1px solid var(--border-color);
         }
         
         pre {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 24px;
+            border-radius: var(--radius-md);
             overflow-x: auto;
-            margin: 20px 0;
+            margin: 24px 0;
+            border: 1px solid var(--border-color);
+            position: relative;
+            line-height: 1.5;
         }
         
         pre code {
             background: none;
             padding: 0;
             color: inherit;
+            border: none;
+            font-size: 0.875rem;
+        }
+        
+        pre::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
         }
         
         .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid;
         }
         
         .status-completed {
-            background: #d4edda;
-            color: #155724;
+            background: #f0f9ff;
+            color: var(--accent-color);
+            border-color: #bbf7d0;
         }
         
         .status-pending {
-            background: #fff3cd;
-            color: #856404;
+            background: #fffbeb;
+            color: #d97706;
+            border-color: #fed7aa;
         }
         
         .status-warning {
-            background: #f8d7da;
-            color: #721c24;
+            background: #fef2f2;
+            color: var(--danger-color);
+            border-color: #fecaca;
+        }
+        
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-completed::before {
+            background: var(--accent-color);
+        }
+        
+        .status-pending::before {
+            background: #d97706;
+        }
+        
+        .status-warning::before {
+            background: var(--danger-color);
         }
         
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin: 32px 0;
         }
         
         .feature-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-left-color: var(--accent-color);
         }
         
         .feature-card h4 {
             margin-top: 0;
-            color: #667eea;
+            margin-bottom: 12px;
+            color: var(--primary-color);
+            font-size: 1.125rem;
+        }
+        
+        .feature-card ul {
+            margin-left: 16px;
+        }
+        
+        .feature-card li {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
         }
         
         .back-to-app {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: #667eea;
+            bottom: 32px;
+            right: 32px;
+            background: var(--primary-color);
             color: white;
-            padding: 15px 25px;
+            padding: 16px 24px;
             border-radius: 50px;
             text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.875rem;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.2s ease;
             z-index: 1000;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .back-to-app:hover {
-            background: #5a67d8;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            background: #0256cc;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(3, 102, 214, 0.4);
         }
+        
+        .back-to-app::before {
+             content: '←';
+             font-size: 1rem;
+         }
+         
+         /* 表格样式 */
+         table {
+             width: 100%;
+             border-collapse: collapse;
+             margin: 24px 0;
+             background: var(--bg-primary);
+             border-radius: var(--radius-md);
+             overflow: hidden;
+             box-shadow: var(--shadow-sm);
+         }
+         
+         th, td {
+             padding: 12px 16px;
+             text-align: left;
+             border-bottom: 1px solid var(--border-color);
+         }
+         
+         th {
+             background: var(--bg-secondary);
+             font-weight: 600;
+             color: var(--text-primary);
+             font-size: 0.875rem;
+             text-transform: uppercase;
+             letter-spacing: 0.05em;
+         }
+         
+         tr:hover {
+             background: var(--bg-secondary);
+         }
+         
+         /* 链接样式 */
+         a {
+             color: var(--primary-color);
+             text-decoration: none;
+             transition: color 0.2s ease;
+         }
+         
+         a:hover {
+             color: #0256cc;
+             text-decoration: underline;
+         }
+         
+         /* 分隔线样式 */
+         hr {
+             border: none;
+             height: 1px;
+             background: var(--border-color);
+             margin: 32px 0;
+         }
+         
+         /* 标签样式 */
+         .tag {
+             display: inline-block;
+             padding: 2px 8px;
+             background: var(--bg-tertiary);
+             color: var(--text-secondary);
+             border-radius: var(--radius-sm);
+             font-size: 0.75rem;
+             font-weight: 500;
+             margin: 2px;
+         }
+         
+         /* 警告框样式 */
+         .alert {
+             padding: 16px 20px;
+             border-radius: var(--radius-md);
+             margin: 24px 0;
+             border-left: 4px solid;
+         }
+         
+         .alert-info {
+             background: #f0f9ff;
+             border-color: var(--primary-color);
+             color: #1e40af;
+         }
+         
+         .alert-warning {
+             background: #fffbeb;
+             border-color: #d97706;
+             color: #92400e;
+         }
+         
+         .alert-success {
+             background: #f0fdf4;
+             border-color: var(--accent-color);
+             color: #166534;
+         }
+         
+         .alert-danger {
+             background: #fef2f2;
+             border-color: var(--danger-color);
+             color: #991b1b;
+         }
+         
+         /* 代码块复制按钮 */
+         .code-block {
+             position: relative;
+         }
+         
+         .copy-button {
+             position: absolute;
+             top: 12px;
+             right: 12px;
+             background: var(--bg-secondary);
+             border: 1px solid var(--border-color);
+             color: var(--text-secondary);
+             padding: 6px 12px;
+             border-radius: var(--radius-sm);
+             font-size: 0.75rem;
+             cursor: pointer;
+             transition: all 0.2s ease;
+             opacity: 0;
+         }
+         
+         .code-block:hover .copy-button {
+             opacity: 1;
+         }
+         
+         .copy-button:hover {
+             background: var(--primary-color);
+             color: white;
+         }
         
         @media (max-width: 768px) {
             .container {
-                margin: 10px;
-                padding: 15px;
+                margin: 16px;
+                border-radius: var(--radius-md);
+            }
+            
+            .content {
+                padding: 24px 20px;
+            }
+            
+            .header {
+                padding: 48px 20px;
             }
             
             .header h1 {
-                font-size: 2em;
+                font-size: 2.5rem;
+            }
+            
+            .header p {
+                font-size: 1.125rem;
+            }
+            
+            .nav {
+                padding: 12px 20px;
             }
             
             .nav ul {
                 flex-direction: column;
                 align-items: center;
+                gap: 4px;
+            }
+            
+            .nav a {
+                padding: 8px 16px;
+                width: 100%;
+                text-align: center;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+                margin-top: 32px;
+            }
+            
+            h3 {
+                font-size: 1.25rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .feature-card {
+                padding: 20px;
             }
             
             .back-to-app {
                 bottom: 20px;
                 right: 20px;
                 padding: 12px 20px;
+                font-size: 0.8rem;
+            }
+            
+            pre {
+                padding: 16px;
+                font-size: 0.8rem;
+            }
+            
+            .mermaid {
+                padding: 16px;
+                font-size: 0.9rem;
             }
         }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .content {
+                padding: 20px 16px;
+            }
+            
+            .nav {
+                 padding: 8px 16px;
+             }
+             
+             table {
+                 font-size: 0.875rem;
+             }
+             
+             th, td {
+                 padding: 8px 12px;
+             }
+         }
+         
+         /* 深色模式支持 */
+         @media (prefers-color-scheme: dark) {
+             :root {
+                 --bg-primary: #0d1117;
+                 --bg-secondary: #161b22;
+                 --bg-tertiary: #21262d;
+                 --text-primary: #f0f6fc;
+                 --text-secondary: #8b949e;
+                 --text-muted: #6e7681;
+                 --border-color: #30363d;
+             }
+             
+             .header {
+                 background: linear-gradient(135deg, #1f6feb 0%, #0969da 100%);
+             }
+             
+             pre {
+                 background: #0d1117;
+                 border-color: #30363d;
+             }
+         }
     </style>
 </head>
 <body>
@@ -253,17 +680,18 @@
         
         <nav class="nav">
             <ul>
-                <li><a href="#overview">项目概述</a></li>
-                <li><a href="#features">功能需求</a></li>
-                <li><a href="#ui">用户界面</a></li>
-                <li><a href="#architecture">技术架构</a></li>
-                <li><a href="#current-arch">当前架构</a></li>
-                <li><a href="#ai-flow">AI生成流程</a></li>
-                <li><a href="#status">实现状态</a></li>
-                <li><a href="#roadmap">扩展计划</a></li>
+                <li><a href="#overview">📋 项目概述</a></li>
+                <li><a href="#features">⚡ 功能需求</a></li>
+                <li><a href="#ui">🎨 用户界面</a></li>
+                <li><a href="#architecture">🏗️ 技术架构</a></li>
+                <li><a href="#current-arch">🔧 当前架构</a></li>
+                <li><a href="#ai-flow">🤖 AI生成流程</a></li>
+                <li><a href="#status">📊 实现状态</a></li>
+                <li><a href="#roadmap">🚀 扩展计划</a></li>
             </ul>
         </nav>
         
+        <div class="content">
         <section id="overview">
             <h1>项目概述</h1>
             <p><strong>"用一粒 AI 种子，生长无限像素世界"</strong></p>
@@ -296,8 +724,10 @@
                 <div class="feature-card">
                     <h4>1.1 预设主题</h4>
                     <ul>
-                        <li><strong>史诗魔幻</strong>：包含魔法、龙、城堡、森林等元素</li>
-                        <li><strong>赛博朋克</strong>：包含霓虹灯、机械、未来城市等元素</li>
+                        <li><strong>史诗魔幻 (Epic Fantasy)</strong>：包含魔法、龙、城堡、森林等元素</li>
+                        <li><strong>赛博朋克 (Cyberpunk)</strong>：包含霓虹灯、机械、未来城市等元素</li>
+                        <li><strong>西部世界 (Western World)</strong>：包含牛仔、酒馆、沙漠景观、边疆小镇等元素</li>
+                        <li><strong>海底世界 (Underwater World)</strong>：包含珊瑚礁、深海生物、古代海底文明等元素</li>
                     </ul>
                 </div>
                 
@@ -440,9 +870,11 @@
                 <li><strong>游戏渲染</strong>：混合方案 - 背景使用CSS，角色使用Canvas (已实现)</li>
                 <li><strong>状态管理</strong>：Zustand 5.0.8 (已实现)</li>
                 <li><strong>UI组件</strong>：Ant Design 5.27.1 (已实现)</li>
-                <li><strong>HTTP客户端</strong>：Fetch API (待实现)</li>
+                <li><strong>HTTP客户端</strong>：Fetch API (已实现)</li>
                 <li><strong>动画库</strong>：Framer Motion 12.23.12 (已实现)</li>
                 <li><strong>图标库</strong>：Ant Design Icons 6.0.0 + Lucide React 0.542.0 (已实现)</li>
+                <li><strong>组件架构</strong>：模块化组件设计，统一导出管理 (已实现)</li>
+                <li><strong>配置管理</strong>：集中化配置文件管理 (已实现)</li>
             </ul>
             
             <h2>后端技术栈</h2>
@@ -454,7 +886,7 @@
                 <li><strong>队列处理</strong>：Bull Queue（处理AI生成任务）</li>
             </ul>
             
-            <h2>AI集成</h2>
+            <h2>AI集成 <span class="status-badge status-completed">已实现</span></h2>
             <ul>
                 <li><strong>图像生成模型</strong>：Qwen-Image (通过DashScope API)</li>
                 <li><strong>API端点</strong>：https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation</li>
@@ -462,6 +894,70 @@
                 <li><strong>调用方式</strong>：HTTP同步接口，发送POST请求后立即返回结果</li>
                 <li><strong>图像处理</strong>：Sharp.js 进行格式转换和优化</li>
                 <li><strong>并发控制</strong>：Promise.all 并行处理角色和背景生成</li>
+            </ul>
+            
+            <h2>组件架构设计 <span class="status-badge status-completed">已实现</span></h2>
+            
+            <h3>组件目录结构</h3>
+            <pre><code class="language-bash">components/
+├── Canvas.tsx              # 游戏画布组件
+├── Menu.tsx               # 主菜单组件
+├── config.ts              # 配置文件管理
+├── types.ts               # TypeScript类型定义
+└── ui/                    # UI组件目录
+    ├── ActionButtons.tsx      # 操作按钮组件
+    ├── GameInterface.tsx      # 游戏界面组件
+    ├── ModelSelector.tsx      # 模型选择器组件
+    ├── ProgressIndicator.tsx  # 进度指示器组件
+    ├── ProjectHeader.tsx      # 项目头部组件
+    ├── ThemeCustomizer.tsx    # 主题定制器组件
+    ├── ThemePreview.tsx       # 主题预览组件
+    ├── ThemesList.tsx         # 主题列表组件
+    ├── CircularText/          # 圆形文字组件
+    ├── CurvedLoop/            # 曲线循环组件
+    ├── ScrambleText/          # 文字扰动组件
+    └── index.ts               # 统一导出文件</code></pre>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>核心组件功能</h4>
+                    <ul>
+                        <li><strong>Menu.tsx</strong>：主菜单组件，整合所有子组件，管理应用状态</li>
+                        <li><strong>GameInterface.tsx</strong>：游戏界面组件，处理游戏渲染和交互</li>
+                        <li><strong>ProjectHeader.tsx</strong>：项目头部，展示项目名称和描述</li>
+                        <li><strong>ModelSelector.tsx</strong>：AI模型选择和API Key配置</li>
+                        <li><strong>ThemeCustomizer.tsx</strong>：自定义主题名称和提示词输入</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>UI交互组件</h4>
+                    <ul>
+                        <li><strong>ActionButtons.tsx</strong>：创建主题和开始游戏按钮</li>
+                        <li><strong>ThemesList.tsx</strong>：预设主题列表展示和选择</li>
+                        <li><strong>ThemePreview.tsx</strong>：主题预览区域，显示角色和背景</li>
+                        <li><strong>ProgressIndicator.tsx</strong>：生成进度显示</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h3>配置管理系统</h3>
+            <ul>
+                <li><strong>config.ts</strong>：集中管理预设主题配置
+                    <ul>
+                        <li>PresetTheme 接口定义</li>
+                        <li>PRESET_THEMES 预设主题数组（4个主题）</li>
+                        <li>CONFIG 全局配置对象</li>
+                    </ul>
+                </li>
+                <li><strong>types.ts</strong>：完整的TypeScript类型定义
+                    <ul>
+                        <li>所有组件Props接口</li>
+                        <li>主题和游戏数据类型</li>
+                        <li>事件处理函数类型</li>
+                    </ul>
+                </li>
+                <li><strong>index.ts</strong>：统一导出机制，简化组件导入</li>
             </ul>
         </section>
         
@@ -478,40 +974,54 @@ graph TB
         D["Tailwind CSS 样式"]
     end
     
+    subgraph "组件架构层 (已实现)"
+        E1["Menu.tsx 主菜单"]
+        E2["GameInterface.tsx 游戏界面"]
+        E3["UI组件模块 (ui/)"]
+        E4["config.ts 配置管理"]
+        E5["types.ts 类型定义"]
+        E6["index.ts 统一导出"]
+    end
+    
     subgraph "状态管理层 (已实现)"
-        E["Zustand Store"]
-        F["游戏状态管理"]
-        G["角色位置追踪"]
-        H["主题选择状态"]
+        F["Zustand Store"]
+        G["游戏状态管理"]
+        H["角色位置追踪"]
+        I["主题选择状态"]
     end
     
     subgraph "游戏渲染层 (已实现)"
-        I["CSS 背景渲染"]
-        J["绝对定位角色"]
-        K["键盘事件监听"]
-        L["游戏循环 (16ms)"]
+        J["CSS 背景渲染"]
+        K["绝对定位角色"]
+        L["键盘事件监听"]
+        M["游戏循环 (16ms)"]
     end
     
     subgraph "AI生成层 (待实现)"
-        M["DashScope API"]
-        N["Qwen-Image 模型"]
-        O["图像处理"]
+        N["DashScope API"]
+        O["Qwen-Image 模型"]
+        P["图像处理"]
     end
     
     A --> B
     A --> C
     A --> D
-    A --> E
-    E --> F
-    E --> G
-    E --> H
+    A --> E1
+    E1 --> E3
+    E3 --> E6
+    E4 --> E1
+    E5 --> E3
+    A --> F
+    F --> G
+    F --> H
     F --> I
-    F --> J
-    K --> L
-    L --> G
-    A -.-> M
-    M -.-> N
+    G --> J
+    G --> K
+    L --> M
+    M --> H
+    A -.-> N
     N -.-> O
+    O -.-> P
             </div>
             
             <h2>用户交互流程图</h2>
@@ -548,7 +1058,7 @@ flowchart TD
         </section>
         
         <section id="ai-flow">
-            <h1>AI生成流程设计 (待实现)</h1>
+            <h1>AI生成流程设计 <span class="status-badge status-completed">已实现</span></h1>
             
             <h2>生成流程时序图</h2>
             <div class="mermaid">
@@ -567,6 +1077,37 @@ sequenceDiagram
     Backend-->>Frontend: 统一响应 {character, background}
     Frontend->>User: 显示预览 + "开始游戏"按钮
             </div>
+            
+            <h2>实现细节</h2>
+            
+            <h3>API路由实现</h3>
+            <p>在 <code>app/api/generate/route.ts</code> 中实现了完整的生成API：</p>
+            <ul>
+                <li><strong>请求处理</strong>：接收主题、提示词、角色类型、关卡类型等参数</li>
+                <li><strong>提示词构建</strong>：根据不同主题和类型构建专业的提示词模板</li>
+                <li><strong>并行生成</strong>：同时生成角色和背景图片，提高效率</li>
+                <li><strong>错误处理</strong>：完善的异常捕获和错误信息返回</li>
+                <li><strong>CORS支持</strong>：支持跨域请求处理</li>
+            </ul>
+            
+            <h3>前端集成</h3>
+            <p>在 <code>Menu.tsx</code> 组件中实现了完整的生成流程：</p>
+            <ul>
+                <li><strong>状态管理</strong>：使用Zustand管理生成状态和进度</li>
+                <li><strong>进度显示</strong>：实时显示生成进度和状态信息</li>
+                <li><strong>主题管理</strong>：动态添加生成的主题到主题列表</li>
+                <li><strong>错误处理</strong>：用户友好的错误提示和状态恢复</li>
+                <li><strong>加载状态</strong>：防止重复提交和状态混乱</li>
+            </ul>
+            
+            <h3>DashScope集成</h3>
+            <p>与阿里云DashScope API的完整集成：</p>
+            <ul>
+                <li><strong>模型选择</strong>：使用Qwen-Image模型进行图像生成</li>
+                <li><strong>参数配置</strong>：支持不同尺寸、负面提示词等参数</li>
+                <li><strong>响应解析</strong>：正确解析API返回的图片URL</li>
+                <li><strong>并发控制</strong>：合理控制API调用频率</li>
+            </ul>
             
             <h2>详细实现流程</h2>
             
@@ -601,6 +1142,8 @@ sequenceDiagram
                         <li>Next.js + TypeScript + Tailwind CSS</li>
                         <li>Ant Design 完整集成</li>
                         <li>Zustand 全局状态管理</li>
+                        <li>模块化组件架构：完整的组件拆分和重构</li>
+                        <li>配置文件管理：集中化主题配置管理</li>
                     </ul>
                 </div>
                 
@@ -610,6 +1153,8 @@ sequenceDiagram
                         <li>主题选择系统：预设主题 + 自定义主题输入</li>
                         <li>响应式设计：移动端适配</li>
                         <li>游戏界面：完整的UI布局</li>
+                        <li>扩展主题支持：4个预设主题（史诗魔幻、赛博朋克、西部世界、海底世界）</li>
+                        <li>类型系统：完整的TypeScript类型定义</li>
                     </ul>
                 </div>
                 
@@ -621,6 +1166,7 @@ sequenceDiagram
                         <li>动画系统：Framer Motion 平滑过渡</li>
                         <li>游戏循环：60fps 实时更新</li>
                         <li>暂停功能：ESC键暂停/恢复</li>
+                        <li>统一导出机制：组件统一导出和管理</li>
                     </ul>
                 </div>
             </div>
@@ -650,7 +1196,6 @@ sequenceDiagram
             <ul>
                 <li><strong>模拟数据</strong>：当前使用占位符图片，需接入真实AI生成</li>
                 <li><strong>性能优化</strong>：游戏循环可优化为requestAnimationFrame</li>
-                <li><strong>类型安全</strong>：部分组件props类型定义待完善</li>
                 <li><strong>测试覆盖</strong>：缺少单元测试和集成测试</li>
             </ul>
         </section>
@@ -732,6 +1277,7 @@ sequenceDiagram
                 </div>
             </div>
         </section>
+        </div>
     </div>
     
     <a href="/" class="back-to-app">🎮 返回应用</a>
@@ -742,17 +1288,24 @@ sequenceDiagram
             startOnLoad: true,
             theme: 'default',
             themeVariables: {
-                primaryColor: '#667eea',
-                primaryTextColor: '#2c3e50',
-                primaryBorderColor: '#667eea',
-                lineColor: '#667eea',
-                secondaryColor: '#f8f9fa',
-                tertiaryColor: '#e9ecef'
+                primaryColor: '#0366d6',
+                primaryTextColor: '#24292e',
+                primaryBorderColor: '#e1e4e8',
+                lineColor: '#586069',
+                secondaryColor: '#f6f8fa',
+                tertiaryColor: '#ffffff'
             }
         });
         
-        // 平滑滚动
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        // 初始化 Prism.js 代码高亮
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightAll();
+            }
+        });
+        
+        // 平滑滚动导航
+        document.querySelectorAll('.nav a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
@@ -763,6 +1316,16 @@ sequenceDiagram
                     });
                 }
             });
+        });
+        
+        // 添加滚动时导航栏阴影效果
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('.nav');
+            if (window.scrollY > 100) {
+                nav.style.boxShadow = 'var(--shadow-md)';
+            } else {
+                nav.style.boxShadow = 'var(--shadow-sm)';
+            }
         });
         
         // 路由处理
