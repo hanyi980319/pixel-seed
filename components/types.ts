@@ -1,0 +1,101 @@
+import { ReactNode } from 'react'
+import { GameTheme } from '@/lib/store'
+
+// 主题相关类型
+export interface Theme {
+  id: GameTheme
+  name: string
+  description: string
+  icon: ReactNode
+  coverImage: string
+  characterImage: string
+  backgroundImage: string
+  isLoading?: boolean
+}
+
+// 游戏数据类型
+export interface GameData {
+  character?: {
+    url: string
+  }
+  background?: {
+    url: string
+  }
+}
+
+// 项目头部组件Props
+export interface ProjectHeaderProps {
+  className?: string
+}
+
+// 模型选择器组件Props
+export interface ModelSelectorProps {
+  selectedModel: string
+  onModelChange: (model: string) => void
+  apiKey: string
+  onApiKeyChange: (apiKey: string) => void
+}
+
+// 主题定制器组件Props
+export interface ThemeCustomizerProps {
+  customThemeName: string
+  onThemeNameChange: (name: string) => void
+  customPrompt: string
+  onPromptChange: (prompt: string) => void
+}
+
+// 操作按钮组件Props
+export interface ActionButtonsProps {
+  isThemeCreated: boolean
+  isLoading: boolean
+  isGenerating: boolean
+  selectedTheme: GameTheme
+  customPrompt: string
+  onCreateTheme: () => void
+  onStartGame: () => void
+}
+
+// 主题列表组件Props
+export interface ThemesListProps {
+  themes: Theme[]
+  selectedTheme: GameTheme
+  onThemeSelect: (themeId: GameTheme) => void
+}
+
+// 主题预览组件Props
+export interface ThemePreviewProps {
+  isGenerating: boolean
+  isLoading: boolean
+  loadingProgress: number
+  gameData?: GameData
+  selectedTheme: GameTheme
+  themes: Theme[]
+}
+
+// 进度指示器组件Props
+export interface ProgressIndicatorProps {
+  isGenerating: boolean
+  loadingMessage: string
+  loadingProgress: number
+}
+
+// 游戏界面组件Props
+export interface GameInterfaceProps {
+  sidebarWidth: number
+  onSidebarResize: (width: number) => void
+  onBackToMenu: () => void
+}
+
+// 主菜单组件Props
+export interface MenuProps {
+  className?: string
+}
+
+// 主题选择处理函数类型
+export type ThemeSelectHandler = (themeId: GameTheme) => void
+
+// 主题创建处理函数类型
+export type ThemeCreateHandler = () => Promise<void>
+
+// 游戏开始处理函数类型
+export type GameStartHandler = () => void
