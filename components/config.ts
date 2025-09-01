@@ -50,6 +50,27 @@ export const PRESET_THEMES: PresetTheme[] = [
 ]
 
 // 配置常量
+// 《死亡细胞》风格基础约束
+export const DEAD_CELLS_STYLE = {
+  // 基础2D横版像素艺术约束
+  base: {
+    character: '2D side-scrolling pixel art character, 16-bit retro style, dark fantasy aesthetic, high contrast colors, hand-drawn texture, dynamic lighting effects, clear pixel outline, full body sprite, roguelike design',
+    background: '2D side-scrolling pixel art background, horizontal scrolling composition, dark fantasy atmosphere, high saturation dark tones, dynamic lighting, hand-drawn texture, no characters'
+  },
+  // 角色类型约束
+  character: {
+    player: 'protagonist character, agile warrior design, distinctive silhouette, combat-ready pose, perfect side profile proportions, authentic game character anatomy, precise pixel-perfect silhouette, heroic stance with proper body ratios',
+    enemy: 'hostile creature, menacing appearance, combat stance, threatening design, accurate side view anatomy, game-authentic proportions, clear hostile silhouette, intimidating profile pose',
+    npc: 'non-combat character, neutral design, story-relevant appearance, proper side profile stance, consistent game world proportions, recognizable character archetype, balanced body structure'
+  },
+  // 场景类型约束
+  background: {
+    ground: 'ground level environment, platformer layout, horizontal navigation paths',
+    underground: 'underground caverns, dungeon atmosphere, stone textures, mysterious lighting',
+    sky: 'elevated platforms, aerial environment, floating structures, atmospheric perspective'
+  }
+}
+
 export const CONFIG = {
   // 主题相关配置
   THEMES: {
