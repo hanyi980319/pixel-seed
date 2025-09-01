@@ -338,11 +338,13 @@ sequenceDiagram
 ## AI生成内容规范
 
 ### 1. 图像规格
-- **分辨率**：角色 1328x1328px（可后期裁剪为32x32px），背景 1920x1080px
+- **分辨率**：角色 1328x1328px（可后期裁剪为32x32px），背景 1664x928px
 - **格式**：PNG（支持透明度）
 - **色彩**：由AI模型自动生成，支持像素艺术风格调色板
-- **风格**：像素艺术风格（通过prompt_extend参数优化）
+- **风格**：《死亡细胞》风格像素艺术（通过prompt_extend参数优化）
 - **水印**：关闭水印（watermark: false）
+- **角色背景**：纯白色背景 #FFFFFF，便于后续抠图处理
+- **视角约束**：严格侧身视角，保持游戏原设造型比例
 
 ### 2. 生成接口设计
 
@@ -407,7 +409,7 @@ Body:
     ]
   },
   "parameters": {
-    "negative_prompt": "",
+    "negative_prompt": "background elements, environment objects, scenery, landscape, buildings, trees, rocks, platforms, ground, floor, ceiling, walls, decorative elements, props, furniture, vehicles, weapons on ground, items, collectibles, UI elements, text, logos, watermarks, 3D render, realistic style, photorealistic, smooth gradients, anti-aliasing, blurred edges, soft shading, modern graphics, high-poly models, vector art, cartoon style, anime style, chibi style, front view, back view, three-quarter view, isometric view, top-down view, multiple angles, rotating character, character sheet, multiple poses",
     "prompt_extend": true,
     "watermark": false,
     "size": "1328*1328"
@@ -417,18 +419,73 @@ Body:
 // 背景生成调用
 同样的API端点和Headers，Body中的text内容为：
 "pixel art landscape, {theme} world, {levelType}, {specific_prompt}"
-参数中size可调整为 "1920*1080" 用于背景生成
+参数中size可调整为 "1664*928" 用于背景生成
+negative_prompt调整为："characters, people, humans, creatures, monsters, animals, NPCs, players, sprites, figures, silhouettes, shadows of characters, user interface, HUD elements, health bars, menus, buttons, text overlays, score displays, minimap, inventory icons, dialogue boxes, particle effects on characters, character animations, motion blur on sprites, character-specific lighting effects"
 ```
 
-### 3. 提示词模板
+### 3. 反向提示词优化
+
+为确保生成内容精准符合《死亡细胞》风格，系统采用了详细的反向提示词约束：
+
+#### 角色反向约束
+- **环境排除**："background elements, environment objects, scenery, landscape, buildings, trees, rocks, platforms, ground, floor, ceiling, walls, decorative elements, props, furniture, vehicles, weapons on ground, items, collectibles, UI elements, text, logos, watermarks"
+- **风格排除**："3D render, realistic style, photorealistic, smooth gradients, anti-aliasing, blurred edges, soft shading, modern graphics, high-poly models, vector art, cartoon style, anime style, chibi style"
+- **视角排除**："front view, back view, three-quarter view, isometric view, top-down view, multiple angles, rotating character, character sheet, multiple poses"
+
+#### 背景反向约束
+- **角色排除**："characters, people, humans, creatures, monsters, animals, NPCs, players, sprites, figures, silhouettes, shadows of characters"
+- **UI排除**："user interface, HUD elements, health bars, menus, buttons, text overlays, score displays, minimap, inventory icons, dialogue boxes"
+- **效果排除**："particle effects on characters, character animations, motion blur on sprites, character-specific lighting effects"
+
+### 4. 生成参数配置
+
+```typescript
+const generateConfig = {
+  model: "qwen-image",
+  width: 1328,  // 角色专用
+  height: 1328, // 角色专用
+  background_width: 1664,  // 背景专用
+  background_height: 928,  // 背景专用
+  prompt_extend: true,
+  watermark: false,
+  safety_tolerance: 2,
+  negative_prompt: "根据内容类型动态应用反向约束"
+};
+```
+
+### 5. 《死亡细胞》风格提示词模板
 
 #### 史诗魔幻主题
-- 角色："pixel art character, fantasy style, {characterType}, medieval armor, magical elements"
-- 背景："pixel art landscape, fantasy world, {levelType}, castles, forests, magical atmosphere"
+- **角色**："2D side-scrolling pixel art character, 16-bit retro style, dark fantasy aesthetic, medieval armor with weathered textures, magical elements with glowing effects, high contrast colors, hand-drawn texture, dynamic lighting, clear pixel outline, full body sprite, roguelike warrior design, side view profile pose, pure white background #FFFFFF, isolated character only, no environment elements, perfect for sprite extraction"
+- **背景**："2D side-scrolling pixel art background, horizontal scrolling composition, dark fantasy medieval world, ancient castles with gothic architecture, mysterious forests with atmospheric lighting, high saturation dark tones, hand-drawn texture, dynamic shadows, no characters"
 
 #### 赛博朋克主题
-- 角色："pixel art character, cyberpunk style, {characterType}, neon colors, futuristic clothing"
-- 背景："pixel art cityscape, cyberpunk world, {levelType}, neon lights, skyscrapers, dark atmosphere"
+- **角色**："2D side-scrolling pixel art character, 16-bit retro style, dark cyberpunk aesthetic, neon-accented futuristic clothing, high-tech weaponry, high contrast neon colors, hand-drawn texture, dynamic lighting effects, clear pixel outline, full body sprite, roguelike cyber-warrior design, side view profile pose, pure white background #FFFFFF, isolated character only, no environment elements, perfect for sprite extraction"
+- **背景**："2D side-scrolling pixel art background, horizontal scrolling composition, dark cyberpunk cityscape, towering skyscrapers with neon signs, industrial platforms and walkways, high saturation dark tones with neon highlights, hand-drawn texture, atmospheric lighting, no characters"
+
+#### 西部世界主题
+- **角色**："2D side-scrolling pixel art character, 16-bit retro style, dark western aesthetic, weathered cowboy attire, vintage firearms, high contrast earth tones, hand-drawn texture, dramatic lighting, clear pixel outline, full body sprite, roguelike gunslinger design, side view profile pose, pure white background #FFFFFF, isolated character only, no environment elements, perfect for sprite extraction"
+- **背景**："2D side-scrolling pixel art background, horizontal scrolling composition, dark western frontier, desert landscapes with rocky formations, abandoned towns and saloons, high saturation warm tones, hand-drawn texture, sunset lighting effects, no characters"
+
+#### 海底世界主题
+- **角色**："2D side-scrolling pixel art character, 16-bit retro style, dark aquatic aesthetic, diving gear or aquatic adaptations, underwater weaponry, high contrast blue-green tones, hand-drawn texture, underwater lighting effects, clear pixel outline, full body sprite, roguelike deep-sea explorer design, side view profile pose, pure white background #FFFFFF, isolated character only, no environment elements, perfect for sprite extraction"
+- **背景**："2D side-scrolling pixel art background, horizontal scrolling composition, dark underwater environment, coral reefs and ancient ruins, mysterious deep-sea caverns, high saturation blue-green tones, hand-drawn texture, volumetric underwater lighting, no characters"
+
+### 6. 角色类型约束优化
+
+为确保角色生成严格遵循《死亡细胞》游戏原设的侧身造型比例和特征，系统对各角色类型进行了精细化约束：
+
+#### 玩家角色 (Player)
+- **造型特征**："主角战士形象，标准人体比例，清晰的侧身轮廓，动态战斗姿态，装备细节丰富，符合roguelike主角设定"
+- **比例约束**："严格侧视角度，头身比例1:6-7，武器与身体比例协调，保持游戏sprite标准"
+
+#### 敌人角色 (Enemy)
+- **造型特征**："多样化怪物设计，独特的侧身剪影，威胁性外观，符合各主题世界观的敌对生物"
+- **比例约束**："侧视角轮廓清晰，大小比例适中，攻击姿态明确，便于游戏中识别和战斗"
+
+#### NPC角色 (NPC)
+- **造型特征**："非战斗角色设计，友善或中立的外观，职业特征明显，符合世界观设定"
+- **比例约束**："标准侧身视角，静态或交互姿态，服装道具细节丰富，体现角色职能"
 
 ## 当前实现状态
 
