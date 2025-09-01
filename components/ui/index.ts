@@ -6,9 +6,10 @@ export { default as ModelSelector } from './ModelSelector'
 export { default as ThemeCustomizer } from './ThemeCustomizer'
 export { default as ActionButtons } from './ActionButtons'
 export { default as ProgressIndicator } from './ProgressIndicator'
-export { default as ThemesList } from './ThemesList'
-export { default as ThemePreview } from './ThemePreview'
-export { default as GameInterface } from './GameInterface'
+export { default as ThemesList } from '../ThemesList'
+export { default as ThemePreview } from '../ThemePreview'
+export { default as SideMenu } from '../SideMenu'
+export { default as GameCanvas } from '../GameCanvas'
 
 // Re-export existing UI components
 export { default as CircularText } from './CircularText'

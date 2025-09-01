@@ -79,11 +79,11 @@ export interface ProgressIndicatorProps {
   loadingProgress: number
 }
 
-// 游戏界面组件Props
-export interface GameInterfaceProps {
-  sidebarWidth: number
-  onSidebarResize: (width: number) => void
-  onBackToMenu: () => void
+// 游戏画布组件Props
+export interface GameCanvasProps {
+  isGenerating?: boolean
+  loadingProgress?: number
+  loadingMessage?: string
 }
 
 // 主菜单组件Props

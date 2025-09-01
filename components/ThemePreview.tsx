@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, Typography, Progress, Skeleton, Empty } from 'antd'
-import { ThemePreviewProps } from '../types'
+import { ThemePreviewProps } from './types'
 
 const { Text } = Typography
 
