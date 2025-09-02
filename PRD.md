@@ -21,11 +21,32 @@ Pixel Seed 是一款实验性 2D 像素风网页游戏，核心创新在于：�
 
 ### 1. 主题选择系统
 
-#### 1.1 预设主题
+#### 1.1 预设主题 (已实现)
 - **史诗魔幻 (Epic Fantasy)**：包含魔法、龙、城堡、森林等元素
 - **赛博朋克 (Cyberpunk)**：包含霓虹灯、机械、未来城市等元素
 - **西部世界 (Western World)**：包含牛仔、酒馆、沙漠景观、边疆小镇等元素
 - **海底世界 (Underwater World)**：包含珊瑚礁、深海生物、古代海底文明等元素
+
+```typescript
+// 预设主题配置 (configs/index.ts)
+export const PRESET_THEMES: Theme[] = [
+  {
+    id: 'epic-fantasy' as GameTheme,
+    name: 'Epic Fantasy',
+    description: 'A fantasy world of magic, dragons, castles, and forests',
+    characterImage: 'https://img.alicdn.com/imgextra/i3/O1CN01ayAYl31bEMmWoMsJ3_!!6000000003433-2-tps-1328-1328.png',
+    backgroundImage: 'https://img.alicdn.com/imgextra/i4/O1CN01DX2Y9722KlwmMkO6R_!!6000000007102-2-tps-1664-928.png'
+  },
+  {
+    id: 'cyberpunk' as GameTheme,
+    name: 'Cyberpunk',
+    description: 'A sci-fi world of neon lights, machinery, and future cities',
+    characterImage: 'https://img.alicdn.com/imgextra/i4/O1CN01nHC1qf203FYtqGjDS_!!6000000006793-2-tps-1328-1328.png',
+    backgroundImage: 'https://img.alicdn.com/imgextra/i1/O1CN01ZV3lei1UBtKaCzJNU_!!6000000002480-2-tps-1664-928.png'
+  },
+  // ... 其他主题
+]
+```
 
 #### 1.2 自定义主题
 - 用户可手动输入提示词
@@ -133,13 +154,14 @@ Pixel Seed 是一款实验性 2D 像素风网页游戏，核心创新在于：�
 - **缓存**：Redis（可选）
 - **队列处理**：Bull Queue（处理AI生成任务）
 
-### AI集成
+### AI集成 (已实现)
 - **图像生成模型**：Qwen-Image (通过DashScope API)
 - **API端点**：https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation
 - **认证方式**：Bearer Token (API Key: sk-84083f55216c4c53ad9ebf77e3f2dc7f)
 - **调用方式**：HTTP同步接口，发送POST请求后立即返回结果
-- **图像处理**：Sharp.js 进行格式转换和优化
+- **图像规格**：角色 1328x1328px，背景 1664x928px
 - **并发控制**：Promise.all 并行处理角色和背景生成
+- **错误处理**：完善的异常捕获和用户友好的错误信息
 - **参考文档**：GitHub - https://github.com/QwenLM/Qwen-Image
 
 ### 组件架构设计 (已实现)
@@ -365,109 +387,163 @@ sequenceDiagram
 
 ### 2. 生成接口设计
 
-#### 2.1 统一生成接口
-```
+#### 2.1 统一生成接口 (已实现)
+```typescript
+// 请求接口 (app/api/generate/route.ts)
 POST /api/generate
 {
-  "theme": "epic-fantasy" | "cyberpunk" | "custom",
-  "prompt": "string",
-  "characterType": "player" | "enemy" | "npc",
-  "levelType": "ground" | "underground" | "sky"
+  "theme": string,
+  "prompt": string
 }
 
+// 响应格式
 Response:
 {
   "success": boolean,
   "data": {
-    "character": {
-      "url": "string",
-      "actions": {
-        "idle": "string",
-        "walk": "string",
-        "jump": "string",
-        "attack": "string"
-      }
-    },
-    "background": {
-      "url": "string",
-      "layers": {
-        "background": "string",
-        "midground": "string",
-        "foreground": "string"
-      }
-    }
+    "characterUrl": string,
+    "backgroundUrl": string
   },
-  "generationId": "string",
-  "timestamp": "string"
+  "generationId": string,
+  "timestamp": string
+}
+
+// 错误响应
+Error Response:
+{
+  "success": false,
+  "error": string,
+  "timestamp": string
+}
+
+// 实现示例
+export async function POST(request: NextRequest) {
+  try {
+    const body: GenerateRequest = await request.json()
+    const { theme, prompt } = body
+
+    // 构建提示词
+    const characterPrompt = buildPrompt('character', theme, prompt)
+    const backgroundPrompt = buildPrompt('background', theme, prompt)
+
+    // 并行生成
+    const [characterUrl, backgroundUrl] = await Promise.all([
+      callDashScopeAPI(characterPrompt, 'character', '1328*1328'),
+      callDashScopeAPI(backgroundPrompt, 'background', '1664*928')
+    ])
+
+    return NextResponse.json({
+      success: true,
+      data: { characterUrl, backgroundUrl },
+      generationId: `gen_${Date.now()}`,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    )
+  }
 }
 ```
 
-#### 2.2 DashScope Qwen-Image调用接口
-```
-// 角色生成调用
-POST https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation
-Headers:
-  Content-Type: application/json
-  Authorization: Bearer sk-84083f55216c4c53ad9ebf77e3f2dc7f
+#### 2.2 DashScope Qwen-Image调用接口 (已实现)
+```typescript
+// API配置
+const DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+const API_KEY = 'sk-84083f55216c4c53ad9ebf77e3f2dc7f'
 
-Body:
-{
-  "model": "qwen-image",
-  "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": [
+// 调用函数
+async function callDashScopeAPI(prompt: string, type: 'character' | 'background', size: string = '1328*1328'): Promise<string> {
+  const negativePrompt = GAME_TEMPLATES.negative[type]
+
+  const response = await fetch(DASHSCOPE_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'qwen-image',
+      input: {
+        messages: [
           {
-            "text": "pixel art character, {theme} style, {characterType}, {specific_prompt}"
+            role: 'user',
+            content: [
+              {
+                text: prompt
+              }
+            ]
           }
         ]
+      },
+      parameters: {
+        negative_prompt: negativePrompt,
+        prompt_extend: true,
+        watermark: false,
+        size: size
       }
-    ]
+    })
+  })
+
+  // 错误处理和响应解析
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`DashScope API error: ${response.status} - ${errorText}`)
+  }
+
+  const result = await response.json()
+  return result.output.choices[0].message.content[0].image
+}
+
+// 并行生成调用
+const [characterUrl, backgroundUrl] = await Promise.all([
+  callDashScopeAPI(characterPrompt, 'character', '1328*1328'),
+  callDashScopeAPI(backgroundPrompt, 'background', '1664*928')
+])
+```
+
+### 3. 反向提示词优化 (已实现)
+
+为确保生成内容精准符合2D横版像素风游戏风格，系统采用了详细的反向提示词约束：
+
+#### 角色反向约束 (GAME_TEMPLATES.negative.character)
+- **3D和现实风格排除**："3D render, realistic style, photorealistic, low resolution, blurry, smooth gradients, modern UI elements, flat design, vector art, cartoon style, anime style, oversaturated colors"
+- **环境元素排除**："environmental objects, scenery, landscape, background elements, terrain, ground, floor, walls, buildings, architecture, decorative objects, props, furniture, plants, trees, rocks, stones"
+- **视角和构图排除**："front view, back view, three-quarter view, diagonal pose, close-up shots, partial body view, cropped limbs, cut-off head or feet, zoomed-in details, portrait mode, facing left direction"
+- **背景干扰排除**："background textures, surface patterns, environmental details, contextual elements, setting indicators, ambient objects, background interference, mixed elements"
+
+#### 背景反向约束 (GAME_TEMPLATES.negative.background)
+- **角色元素排除**："characters, people, creatures, living beings, humanoid figures, animals, character silhouettes, organic life forms, human shadows, figure outlines, body shapes"
+- **装备道具排除**："character equipment, weapons, armor pieces, clothing items, accessories"
+- **风格约束**："3D render, realistic style, photorealistic, low resolution, blurry, smooth gradients, modern UI elements, flat design, vector art"
+
+### 4. 生成参数配置 (已实现)
+
+```typescript
+// 游戏模板配置 (configs/index.ts)
+export const GAME_TEMPLATES = {
+  positive: {
+    character: '2D side-scrolling pixel art character, 16-bit retro style, high contrast colors, hand-drawn texture, dynamic lighting effects, sharp crisp pixel outline, bold character silhouette, distinct edge definition, complete full body sprite from head to feet, roguelike design, facing right direction, perfect right-facing side view profile pose, centered composition with proper proportions, standing upright posture, full character visible within frame, absolutely pure white background #FFFFFF, completely isolated character sprite, zero background elements',
+    background: '2D side-scrolling pixel art background, horizontal scrolling composition, high saturation dark tones, hand-drawn texture, dynamic lighting, no characters'
   },
-  "parameters": {
-    "negative_prompt": "background elements, environment objects, scenery, landscape, buildings, trees, rocks, platforms, ground, floor, ceiling, walls, decorative elements, props, furniture, vehicles, weapons on ground, items, collectibles, UI elements, text, logos, watermarks, 3D render, realistic style, photorealistic, smooth gradients, anti-aliasing, blurred edges, soft shading, modern graphics, high-poly models, vector art, cartoon style, anime style, chibi style, front view, back view, three-quarter view, isometric view, top-down view, multiple angles, rotating character, character sheet, multiple poses",
-    "prompt_extend": true,
-    "watermark": false,
-    "size": "1328*1328"
+  negative: {
+    character: '详细的角色反向约束...',
+    background: '详细的背景反向约束...'
   }
 }
 
-// 背景生成调用
-同样的API端点和Headers，Body中的text内容为：
-"pixel art landscape, {theme} world, {levelType}, {specific_prompt}"
-参数中size可调整为 "1664*928" 用于背景生成
-negative_prompt调整为："characters, people, humans, creatures, monsters, animals, NPCs, players, sprites, figures, silhouettes, shadows of characters, user interface, HUD elements, health bars, menus, buttons, text overlays, score displays, minimap, inventory icons, dialogue boxes, particle effects on characters, character animations, motion blur on sprites, character-specific lighting effects"
-```
-
-### 3. 反向提示词优化
-
-为确保生成内容精准符合《死亡细胞》风格，系统采用了详细的反向提示词约束：
-
-#### 角色反向约束
-- **环境排除**："background elements, environment objects, scenery, landscape, buildings, trees, rocks, platforms, ground, floor, ceiling, walls, decorative elements, props, furniture, vehicles, weapons on ground, items, collectibles, UI elements, text, logos, watermarks"
-- **风格排除**："3D render, realistic style, photorealistic, smooth gradients, anti-aliasing, blurred edges, soft shading, modern graphics, high-poly models, vector art, cartoon style, anime style, chibi style"
-- **视角排除**："front view, back view, three-quarter view, isometric view, top-down view, multiple angles, rotating character, character sheet, multiple poses"
-
-#### 背景反向约束
-- **角色排除**："characters, people, humans, creatures, monsters, animals, NPCs, players, sprites, figures, silhouettes, shadows of characters"
-- **UI排除**："user interface, HUD elements, health bars, menus, buttons, text overlays, score displays, minimap, inventory icons, dialogue boxes"
-- **效果排除**："particle effects on characters, character animations, motion blur on sprites, character-specific lighting effects"
-
-### 4. 生成参数配置
-
-```typescript
-const generateConfig = {
+// API调用参数
+const apiParams = {
   model: "qwen-image",
-  width: 1328,  // 角色专用
-  height: 1328, // 角色专用
-  background_width: 1664,  // 背景专用
-  background_height: 928,  // 背景专用
   prompt_extend: true,
   watermark: false,
-  safety_tolerance: 2,
-  negative_prompt: "根据内容类型动态应用反向约束"
-};
+  size: "1328*1328" // 角色，背景使用 "1664*928"
+}
 ```
 
 ### 5. 《死亡细胞》风格提示词模板

@@ -891,10 +891,13 @@
             <ul>
                 <li><strong>图像生成模型</strong>：Qwen-Image (通过DashScope API)</li>
                 <li><strong>API端点</strong>：https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation</li>
-                <li><strong>认证方式</strong>：Bearer Token</li>
+                <li><strong>认证方式</strong>：Bearer Token (API Key)</li>
                 <li><strong>调用方式</strong>：HTTP同步接口，发送POST请求后立即返回结果</li>
                 <li><strong>图像处理</strong>：Sharp.js 进行格式转换和优化</li>
                 <li><strong>并发控制</strong>：Promise.all 并行处理角色和背景生成</li>
+                <li><strong>实现状态</strong>：完整的API路由实现，支持主题选择、提示词构建、并行生成</li>
+                <li><strong>错误处理</strong>：完善的异常捕获和用户友好的错误提示</li>
+                <li><strong>参数配置</strong>：支持不同尺寸、负面提示词、水印控制等高级参数</li>
             </ul>
             
             <h2>组件架构设计 <span class="status-badge status-completed">已实现</span></h2>
@@ -1077,6 +1080,7 @@ flowchart TD
                 <li><strong>环境排除</strong>："background elements, environment objects, scenery, landscape, buildings, trees, rocks, platforms, ground, floor, ceiling, walls, decorative elements, props, furniture, vehicles, weapons on ground, items, collectibles, UI elements, text, logos, watermarks"</li>
                 <li><strong>风格排除</strong>："3D render, realistic style, photorealistic, smooth gradients, anti-aliasing, blurred edges, soft shading, modern graphics, high-poly models, vector art, cartoon style, anime style, chibi style"</li>
                 <li><strong>视角排除</strong>："front view, back view, three-quarter view, isometric view, top-down view, multiple angles, rotating character, character sheet, multiple poses"</li>
+                <li><strong>质量控制</strong>："low quality, blurry, pixelated artifacts, compression artifacts, noise, distorted proportions, incomplete character, cut-off limbs"</li>
             </ul>
             
             <h3>2.2 背景反向约束</h3>
@@ -1084,9 +1088,218 @@ flowchart TD
                 <li><strong>角色排除</strong>："characters, people, humans, creatures, monsters, animals, NPCs, players, sprites, figures, silhouettes, shadows of characters"</li>
                 <li><strong>UI排除</strong>："user interface, HUD elements, health bars, menus, buttons, text overlays, score displays, minimap, inventory icons, dialogue boxes"</li>
                 <li><strong>效果排除</strong>："particle effects on characters, character animations, motion blur on sprites, character-specific lighting effects"</li>
+                <li><strong>构图约束</strong>："vertical composition, portrait orientation, centered single object, close-up view, macro photography"</li>
             </ul>
             
-            <h2>3. 生成参数配置</h2>
+            <h2>3. 提示词构建逻辑流程</h2>
+            
+            <h3>3.1 整体架构流程图</h3>
+            <div class="mermaid">
+flowchart TD
+    A["🎮 用户输入"] --> B{"🔍 主题类型判断"}
+    B -->|"预设主题"| C["📋 选择预设主题"]
+    B -->|"自定义主题"| D["✏️ 输入自定义提示词"]
+    
+    C --> E["⚙️ 获取主题配置"]
+    D --> F["✅ 验证自定义输入"]
+    
+    E --> G["🎯 确定内容类型"]
+    F --> G
+    
+    G --> H{"🤔 角色 or 背景?"}
+    
+    H -->|"👤 角色"| I["🏗️ 构建角色提示词"]
+    H -->|"🌍 背景"| J["🏗️ 构建背景提示词"]
+    
+    I --> K["📝 添加基础模板"]
+    J --> L["📝 添加基础模板"]
+    
+    K --> M["🎨 应用主题特定描述"]
+    L --> N["🎨 应用主题特定描述"]
+    
+    M --> O["🎭 添加风格约束"]
+    N --> P["🎭 添加风格约束"]
+    
+    O --> Q["🚫 应用角色反向约束"]
+    P --> R["🚫 应用背景反向约束"]
+    
+    Q --> S["✨ 最终角色提示词"]
+    R --> T["✨ 最终背景提示词"]
+    
+    S --> U["🚀 调用DashScope API"]
+    T --> U
+    
+    U --> V["🎉 返回生成结果"]
+    
+    style A fill:#e1f5fe
+    style V fill:#e8f5e8
+    style H fill:#fff3e0
+    style B fill:#fff3e0
+            </div>
+            
+            <h3>3.2 详细实现步骤</h3>
+            
+            <h4>步骤1: 用户输入处理</h4>
+            <div class="alert alert-info">
+                <strong>实现位置：</strong> <code>components/ThemesList.tsx</code> 和 <code>components/ui/ThemeCustomizer.tsx</code>
+            </div>
+            <pre><code class="language-typescript">// 用户选择预设主题
+const handleThemeSelect = (themeId: string) => {
+  const selectedTheme = themes.find(t => t.id === themeId);
+  if (selectedTheme) {
+    setCurrentTheme(selectedTheme);
+    // 触发提示词构建流程
+    buildPrompt(selectedTheme, contentType);
+  }
+};
+
+// 用户输入自定义提示词
+const handleCustomPrompt = (customText: string) => {
+  if (customText.trim().length > 0) {
+    const customTheme = {
+      id: 'custom',
+      name: '自定义',
+      prompt: customText
+    };
+    buildPrompt(customTheme, contentType);
+  }
+};</code></pre>
+            
+            <h4>步骤2: 主题配置获取</h4>
+            <div class="alert alert-info">
+                <strong>实现位置：</strong> <code>configs/index.ts</code>
+            </div>
+            <pre><code class="language-typescript">// 预设主题配置结构
+export const themes = {
+  epic_fantasy: {
+    id: 'epic_fantasy',
+    name: '史诗魔幻',
+    character: {
+      basePrompt: '2D side-scrolling pixel art character',
+      themeElements: 'medieval fantasy warrior, ornate armor, magical weapons',
+      styleConstraints: '16-bit retro style, detailed pixel art',
+      negativePrompt: 'no background, no environment, no landscape'
+    },
+    background: {
+      basePrompt: '2D side-scrolling pixel art background',
+      themeElements: 'medieval castle, mystical forest, ancient ruins',
+      styleConstraints: 'horizontal scrolling composition, atmospheric',
+      negativePrompt: 'no characters, no people, no creatures'
+    }
+  }
+  // ... 其他主题配置
+};</code></pre>
+            
+            <h4>步骤3: 提示词模板构建</h4>
+            <div class="alert alert-success">
+                <strong>核心算法：</strong> 基于模板系统的动态提示词生成
+            </div>
+            <pre><code class="language-typescript">// 提示词构建核心函数
+function buildPrompt(theme: Theme, contentType: 'character' | 'background'): string {
+  const config = theme[contentType];
+  
+  // 1. 基础模板
+  let prompt = config.basePrompt;
+  
+  // 2. 添加主题特定元素
+  prompt += `, ${config.themeElements}`;
+  
+  // 3. 应用风格约束
+  prompt += `, ${config.styleConstraints}`;
+  
+  // 4. 添加通用死亡细胞风格
+  prompt += ', Dead Cells inspired, metroidvania style';
+  
+  // 5. 质量增强词
+  prompt += ', high quality, detailed pixel art, vibrant colors';
+  
+  return prompt;
+}
+
+// 反向约束构建
+function buildNegativePrompt(contentType: 'character' | 'background'): string {
+  const baseNegative = 'blurry, low quality, distorted, watermark';
+  
+  if (contentType === 'character') {
+    return `${baseNegative}, background elements, landscape, environment, scenery`;
+  } else {
+    return `${baseNegative}, characters, people, creatures, animals, faces`;
+  }
+}</code></pre>
+            
+            <h4>步骤4: API参数配置</h4>
+            <div class="alert alert-warning">
+                <strong>注意：</strong> 不同内容类型使用不同的图像尺寸配置
+            </div>
+            <pre><code class="language-typescript">// API调用参数构建
+function buildAPIParams(prompt: string, negativePrompt: string, contentType: string) {
+  const baseParams = {
+    model: 'qwen-image',
+    prompt: prompt,
+    negative_prompt: negativePrompt,
+    prompt_extend: true,
+    watermark: false,
+    safety_tolerance: 2
+  };
+  
+  // 根据内容类型设置尺寸
+  if (contentType === 'character') {
+    return {
+      ...baseParams,
+      width: 1328,
+      height: 1328
+    };
+  } else {
+    return {
+      ...baseParams,
+      width: 1664,
+      height: 928
+    };
+  }
+}</code></pre>
+            
+            <h4>步骤5: DashScope API调用</h4>
+            <div class="alert alert-info">
+                <strong>实现位置：</strong> <code>app/api/generate/route.ts</code>
+            </div>
+            <pre><code class="language-typescript">// API路由实现
+export async function POST(request: Request) {
+  try {
+    const { theme, contentType, customPrompt } = await request.json();
+    
+    // 1. 构建提示词
+    const prompt = customPrompt || buildPrompt(theme, contentType);
+    const negativePrompt = buildNegativePrompt(contentType);
+    
+    // 2. 配置API参数
+    const params = buildAPIParams(prompt, negativePrompt, contentType);
+    
+    // 3. 调用DashScope API
+    const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input: params,
+        parameters: {
+          style: '<pixel>',
+          size: `${params.width}*${params.height}`
+        }
+      })
+    });
+    
+    // 4. 处理响应
+    const result = await response.json();
+    return Response.json(result);
+    
+  } catch (error) {
+    return Response.json({ error: '生成失败' }, { status: 500 });
+  }
+}</code></pre>
+            
+            <h2>4. 生成参数配置</h2>
             <pre><code class="language-typescript">const generateConfig = {
   model: "qwen-image",
   width: 1328,  // 角色专用
@@ -1099,7 +1312,225 @@ flowchart TD
   negative_prompt: "根据内容类型动态应用反向约束"
 };</code></pre>
             
-            <h2>4. 《死亡细胞》风格提示词模板</h2>
+            <h2>5. 提示词模板构建详细示例</h2>
+            
+            <h3>5.1 构建流程可视化</h3>
+            <div class="mermaid" style="height: 800px; width: 100%; overflow: visible;">
+flowchart TD
+    %% 用户输入层
+    START(["🎮 用户开始生成"])
+    INPUT{"📝 选择输入方式"}
+    PRESET["📋 选择预设主题<br/>史诗魔幻/赛博朋克/蒸汽朋克"]
+    CUSTOM["✏️ 输入自定义提示词<br/>用户自由描述"]
+    
+    %% 内容类型判断
+    TYPE{"🎯 选择生成类型"}
+    CHAR_TYPE["👤 角色生成<br/>1328x1328 正方形"]
+    BG_TYPE["🌍 背景生成<br/>1664x928 宽屏"]
+    
+    %% 角色构建流程
+    subgraph CHAR_FLOW ["👤 角色提示词构建流程"]
+        CHAR_BASE["🏗️ 基础模板<br/>2D side-scrolling pixel art character"]
+        CHAR_THEME["🎨 主题元素<br/>+ medieval fantasy warrior<br/>+ ornate armor, magical weapons"]
+        CHAR_STYLE["🎭 风格约束<br/>+ 16-bit retro style<br/>+ detailed pixel art, side view"]
+        CHAR_QUALITY["✨ 质量增强<br/>+ high quality, vibrant colors<br/>+ Dead Cells inspired"]
+        CHAR_NEGATIVE["🚫 反向约束<br/>- no background, no environment<br/>- no landscape, no scenery"]
+        CHAR_FINAL["🎯 最终角色提示词<br/>完整组合结果"]
+        
+        CHAR_BASE --> CHAR_THEME
+        CHAR_THEME --> CHAR_STYLE
+        CHAR_STYLE --> CHAR_QUALITY
+        CHAR_QUALITY --> CHAR_NEGATIVE
+        CHAR_NEGATIVE --> CHAR_FINAL
+    end
+    
+    %% 背景构建流程
+    subgraph BG_FLOW ["🌍 背景提示词构建流程"]
+        BG_BASE["🏗️ 基础模板<br/>2D side-scrolling pixel art background"]
+        BG_THEME["🎨 主题元素<br/>+ medieval castle, mystical forest<br/>+ ancient ruins, magical atmosphere"]
+        BG_STYLE["🎭 风格约束<br/>+ horizontal scrolling composition<br/>+ atmospheric perspective"]
+        BG_QUALITY["✨ 质量增强<br/>+ detailed environment<br/>+ moody lighting, high contrast"]
+        BG_NEGATIVE["🚫 反向约束<br/>- no characters, no people<br/>- no creatures, no animals"]
+        BG_FINAL["🎯 最终背景提示词<br/>完整组合结果"]
+        
+        BG_BASE --> BG_THEME
+        BG_THEME --> BG_STYLE
+        BG_STYLE --> BG_QUALITY
+        BG_QUALITY --> BG_NEGATIVE
+        BG_NEGATIVE --> BG_FINAL
+    end
+    
+    %% API调用层
+    subgraph API_FLOW ["🚀 API调用处理"]
+        API_PARAMS["⚙️ 参数配置<br/>model: qwen-image<br/>prompt_extend: true<br/>watermark: false"]
+        API_CALL["📡 DashScope API<br/>POST /api/v1/services/aigc/<br/>text2image/image-synthesis"]
+        API_RESPONSE["📦 响应处理<br/>图像URL提取<br/>错误处理"]
+        
+        API_PARAMS --> API_CALL
+        API_CALL --> API_RESPONSE
+    end
+    
+    %% 最终结果
+    RESULT(["🎉 生成完成<br/>返回图像结果"])
+    
+    %% 主流程连接
+    START --> INPUT
+    INPUT -->|预设主题| PRESET
+    INPUT -->|自定义输入| CUSTOM
+    PRESET --> TYPE
+    CUSTOM --> TYPE
+    
+    TYPE -->|角色| CHAR_TYPE
+    TYPE -->|背景| BG_TYPE
+    
+    CHAR_TYPE --> CHAR_FLOW
+    BG_TYPE --> BG_FLOW
+    
+    CHAR_FINAL --> API_FLOW
+    BG_FINAL --> API_FLOW
+    
+    API_RESPONSE --> RESULT
+    
+    %% 样式定义
+    classDef startEnd fill:#e1f5fe,stroke:#01579b,stroke-width:3px,color:#000
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef final fill:#e8f5e8,stroke:#1b5e20,stroke-width:3px,color:#000
+    classDef api fill:#fce4ec,stroke:#880e4f,stroke-width:2px,color:#000
+    
+    class START,RESULT startEnd
+    class INPUT,TYPE decision
+    class PRESET,CUSTOM,CHAR_TYPE,BG_TYPE process
+    class CHAR_FINAL,BG_FINAL final
+    class API_PARAMS,API_CALL,API_RESPONSE api
+            </div>
+            
+            <h3>5.2 实际构建示例</h3>
+            
+            <h4>史诗魔幻主题 - 角色生成</h4>
+            <div class="code-block">
+                <pre><code class="language-typescript">// 输入参数
+const theme = 'epic_fantasy';
+const contentType = 'character';
+
+// 构建过程
+function buildEpicFantasyCharacter() {
+  // 第1层：基础模板
+  let prompt = '2D side-scrolling pixel art character';
+  
+  // 第2层：主题特定元素
+  prompt += ', medieval fantasy warrior';
+  prompt += ', ornate plate armor with intricate engravings';
+  prompt += ', magical glowing sword';
+  prompt += ', flowing cape with heraldic symbols';
+  
+  // 第3层：风格约束
+  prompt += ', 16-bit retro style';
+  prompt += ', detailed pixel art';
+  prompt += ', side view profile';
+  prompt += ', Dead Cells inspired';
+  
+  // 第4层：质量增强
+  prompt += ', high quality';
+  prompt += ', vibrant colors';
+  prompt += ', sharp details';
+  
+  // 反向约束
+  const negativePrompt = 'blurry, low quality, distorted, watermark, ' +
+                        'background elements, landscape, environment, scenery, ' +
+                        'multiple characters, front view, back view';
+  
+  return { prompt, negativePrompt };
+}
+
+// 最终结果
+const result = buildEpicFantasyCharacter();
+console.log('正向提示词:', result.prompt);
+console.log('反向提示词:', result.negativePrompt);</code></pre>
+            </div>
+            
+            <h4>赛博朋克主题 - 背景生成</h4>
+            <div class="code-block">
+                <pre><code class="language-typescript">// 输入参数
+const theme = 'cyberpunk';
+const contentType = 'background';
+
+// 构建过程
+function buildCyberpunkBackground() {
+  // 第1层：基础模板
+  let prompt = '2D side-scrolling pixel art background';
+  
+  // 第2层：主题特定元素
+  prompt += ', futuristic cyberpunk cityscape';
+  prompt += ', neon-lit skyscrapers';
+  prompt += ', holographic advertisements';
+  prompt += ', flying vehicles in the distance';
+  prompt += ', rain-soaked streets with reflections';
+  
+  // 第3层：风格约束
+  prompt += ', horizontal scrolling composition';
+  prompt += ', atmospheric perspective';
+  prompt += ', neon color palette';
+  prompt += ', 16-bit pixel art style';
+  
+  // 第4层：质量增强
+  prompt += ', detailed environment';
+  prompt += ', moody lighting';
+  prompt += ', high contrast';
+  
+  // 反向约束
+  const negativePrompt = 'blurry, low quality, distorted, watermark, ' +
+                        'characters, people, creatures, animals, faces, ' +
+                        'vertical composition, portrait orientation';
+  
+  return { prompt, negativePrompt };
+}
+
+// API调用参数
+const apiParams = {
+  model: 'qwen-image',
+  prompt: result.prompt,
+  negative_prompt: result.negativePrompt,
+  width: 1664,  // 背景专用宽屏比例
+  height: 928,
+  prompt_extend: true,
+  watermark: false,
+  safety_tolerance: 2
+};</code></pre>
+            </div>
+            
+            <h3>5.3 质量优化策略</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎯 精确性优化</h4>
+                    <ul>
+                        <li>使用具体的描述词而非抽象概念</li>
+                        <li>明确指定视角和构图要求</li>
+                        <li>添加风格参考（Dead Cells, 16-bit等）</li>
+                        <li>控制元素数量避免过于复杂</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>🚫 排除性优化</h4>
+                    <ul>
+                        <li>角色生成排除环境元素</li>
+                        <li>背景生成排除人物角色</li>
+                        <li>统一排除低质量、模糊等问题</li>
+                        <li>避免不符合像素风格的元素</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>⚙️ 参数化优化</h4>
+                    <ul>
+                        <li>角色使用正方形比例(1328x1328)</li>
+                        <li>背景使用宽屏比例(1664x928)</li>
+                        <li>启用提示词扩展增强细节</li>
+                        <li>关闭水印保持画面纯净</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>6. 《死亡细胞》风格提示词模板</h2>
             
             <h3>4.1 史诗魔幻主题</h3>
             <ul>
@@ -1178,7 +1609,35 @@ sequenceDiagram
                 <li><strong>并行生成</strong>：同时生成角色和背景图片，提高效率</li>
                 <li><strong>错误处理</strong>：完善的异常捕获和错误信息返回</li>
                 <li><strong>CORS支持</strong>：支持跨域请求处理</li>
+                <li><strong>参数验证</strong>：严格的输入参数验证和类型检查</li>
+                <li><strong>API密钥管理</strong>：安全的环境变量配置和密钥验证</li>
+                <li><strong>响应格式</strong>：统一的JSON响应格式，包含生成的图片URL和元数据</li>
             </ul>
+            
+            <h4>API接口规范</h4>
+            <pre><code class="language-typescript">// POST /api/generate
+// 请求体
+{
+  "theme": "epic-fantasy" | "cyberpunk" | "western" | "underwater" | "custom",
+  "customPrompt": "string", // 自定义主题时必填
+  "characterType": "player" | "enemy" | "npc",
+  "levelType": "ground" | "underground" | "aerial"
+}
+
+// 响应体
+{
+  "success": true,
+  "data": {
+    "character": "https://...", // 角色图片URL
+    "background": "https://..." // 背景图片URL
+  },
+  "metadata": {
+    "theme": "epic-fantasy",
+    "generatedAt": "2024-01-01T00:00:00Z",
+    "characterPrompt": "...",
+    "backgroundPrompt": "..."
+  }
+}</code></pre>
             
             <h3>前端集成</h3>
             <p>在 <code>Menu.tsx</code> 组件中实现了完整的生成流程：</p>
@@ -1264,11 +1723,12 @@ sequenceDiagram
             <h2>待实现功能 🚧</h2>
             <div class="feature-grid">
                 <div class="feature-card">
-                    <h4>AI生成集成</h4>
+                    <h4>AI生成优化</h4>
                     <ul>
-                        <li>DashScope API 接入</li>
-                        <li>图像处理：生成图片的格式转换和优化</li>
-                        <li>错误处理：生成失败重试机制</li>
+                        <li>生成质量优化：提示词模板精细化调整</li>
+                        <li>缓存机制：相同提示词结果缓存</li>
+                        <li>批量生成：支持一次生成多个变体</li>
+                        <li>生成历史：用户生成记录管理</li>
                     </ul>
                 </div>
                 
@@ -1384,6 +1844,25 @@ sequenceDiagram
                 lineColor: '#586069',
                 secondaryColor: '#f6f8fa',
                 tertiaryColor: '#ffffff'
+            }
+        });
+        
+        // 初始化 Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#0366d6',
+                primaryTextColor: '#24292e',
+                primaryBorderColor: '#e1e4e8',
+                lineColor: '#586069',
+                secondaryColor: '#f6f8fa',
+                tertiaryColor: '#ffffff'
+            },
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
             }
         });
         
