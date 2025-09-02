@@ -2,7 +2,7 @@
 
 import { Typography, Select, Input } from 'antd'
 import Image from 'next/image'
-import { ModelSelectorProps } from '../types'
+import { ModelSelectorProps } from '@/types'
 
 const { Text } = Typography
 const { Option } = Select

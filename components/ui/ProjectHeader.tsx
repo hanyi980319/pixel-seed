@@ -3,7 +3,7 @@
 import { Typography } from 'antd'
 import CurvedLoop from './CurvedLoop'
 import ScrambledText from './ScrambleText'
-import { ProjectHeaderProps } from '../types'
+import { ProjectHeaderProps } from '@/types'
 
 const { Title } = Typography
 

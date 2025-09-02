@@ -3,7 +3,7 @@
 import { Button, Space } from 'antd'
 import { PlayCircleOutlined } from '@ant-design/icons'
 import { Sparkles, RotateCcw } from 'lucide-react'
-import { ActionButtonsProps } from '../types'
+import { ActionButtonsProps } from '@/types'
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
   isThemeCreated,

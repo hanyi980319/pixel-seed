@@ -1,7 +1,7 @@
 'use client'
 
 import { Typography, Input } from 'antd'
-import { ThemeCustomizerProps } from '../types'
+import { ThemeCustomizerProps } from '@/types'
 
 const { Text } = Typography
 const { TextArea } = Input

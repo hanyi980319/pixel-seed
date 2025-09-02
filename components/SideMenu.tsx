@@ -9,7 +9,7 @@ import {
   ThemeCustomizer,
   ActionButtons
 } from './ui/index'
-import { PRESET_THEMES } from './config'
+import { PRESET_THEMES } from '../configs'
 
 export interface SideMenuProps {
   onStartGame?: () => void

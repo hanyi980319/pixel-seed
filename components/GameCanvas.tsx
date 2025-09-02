@@ -4,7 +4,7 @@ import { Card, Progress, Typography } from 'antd'
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/lib/store'
-import { GameCanvasProps } from './types'
+import { GameCanvasProps } from '@/types'
 
 const { Text } = Typography
 

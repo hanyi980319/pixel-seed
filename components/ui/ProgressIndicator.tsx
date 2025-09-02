@@ -1,7 +1,7 @@
 'use client'
 
 import { Typography, Progress } from 'antd'
-import { ProgressIndicatorProps } from '../types'
+import { ProgressIndicatorProps } from '@/types'
 
 const { Text } = Typography
 

@@ -8,27 +8,17 @@ import {
   SideMenu,
   ThemesList,
   ThemePreview,
-  MenuProps
 } from '@/components/ui'
-import { PRESET_THEMES } from '@/components/config'
+import { PRESET_THEMES } from '@/configs'
 
 export default function Home() {
   const {
     selectedTheme,
-    customPrompt,
     setSelectedTheme,
-    setCustomPrompt,
-    setGameState,
     loadingProgress,
     loadingMessage,
-    setLoadingProgress,
-    setLoadingMessage,
     gameData,
-    setGameData,
-    isLoading,
-    setLoading,
-    characterType,
-    levelType
+    isLoading
   } = useGameStore()
 
   const [showGameInterface, setShowGameInterface] = useState(false)

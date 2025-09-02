@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, Space, Skeleton } from 'antd'
-import { ThemesListProps } from './types'
+import { ThemesListProps } from '../types'
 
 const ThemesList: React.FC<ThemesListProps> = ({
   themes,

@@ -901,30 +901,33 @@
             
             <h3>组件目录结构</h3>
             <pre><code class="language-bash">components/
-├── Canvas.tsx              # 游戏画布组件
-├── Menu.tsx               # 主菜单组件
-├── config.ts              # 配置文件管理
-├── types.ts               # TypeScript类型定义
-└── ui/                    # UI组件目录
+├── GameCanvas.tsx         # 游戏画布组件
+├── SideMenu.tsx          # 侧边菜单组件
+├── ThemePreview.tsx      # 主题预览组件
+├── ThemesList.tsx        # 主题列表组件
+└── ui/                   # UI组件目录
     ├── ActionButtons.tsx      # 操作按钮组件
-    ├── GameInterface.tsx      # 游戏界面组件
+    ├── CircularText/          # 圆形文字组件
+    │   ├── index.css
+    │   └── index.tsx
+    ├── CurvedLoop/            # 曲线循环组件
+    │   ├── index.css
+    │   └── index.tsx
     ├── ModelSelector.tsx      # 模型选择器组件
     ├── ProgressIndicator.tsx  # 进度指示器组件
     ├── ProjectHeader.tsx      # 项目头部组件
-    ├── ThemeCustomizer.tsx    # 主题定制器组件
-    ├── ThemePreview.tsx       # 主题预览组件
-    ├── ThemesList.tsx         # 主题列表组件
-    ├── CircularText/          # 圆形文字组件
-    ├── CurvedLoop/            # 曲线循环组件
     ├── ScrambleText/          # 文字扰动组件
+    │   ├── index.css
+    │   └── index.tsx
+    ├── ThemeCustomizer.tsx    # 主题定制器组件
     └── index.ts               # 统一导出文件</code></pre>
             
             <div class="feature-grid">
                 <div class="feature-card">
                     <h4>核心组件功能</h4>
                     <ul>
-                        <li><strong>Menu.tsx</strong>：主菜单组件，整合所有子组件，管理应用状态</li>
-                        <li><strong>GameInterface.tsx</strong>：游戏界面组件，处理游戏渲染和交互</li>
+                        <li><strong>SideMenu.tsx</strong>：侧边菜单组件，整合所有子组件，管理应用状态</li>
+                        <li><strong>GameCanvas.tsx</strong>：游戏画布组件，处理游戏渲染和交互</li>
                         <li><strong>ProjectHeader.tsx</strong>：项目头部，展示项目名称和描述</li>
                         <li><strong>ModelSelector.tsx</strong>：AI模型选择和API Key配置</li>
                         <li><strong>ThemeCustomizer.tsx</strong>：自定义主题名称和提示词输入</li>
@@ -944,21 +947,15 @@
             
             <h3>配置管理系统</h3>
             <ul>
-                <li><strong>config.ts</strong>：集中管理预设主题配置
+                <li><strong>lib/store.ts</strong>：Zustand状态管理
                     <ul>
-                        <li>PresetTheme 接口定义</li>
-                        <li>PRESET_THEMES 预设主题数组（4个主题）</li>
-                        <li>CONFIG 全局配置对象</li>
+                        <li>游戏状态管理（gameState, isLoading等）</li>
+                        <li>主题选择状态（selectedTheme, customPrompt）</li>
+                        <li>角色和关卡数据管理（characterType, levelType）</li>
+                        <li>游戏进度和加载状态</li>
                     </ul>
                 </li>
-                <li><strong>types.ts</strong>：完整的TypeScript类型定义
-                    <ul>
-                        <li>所有组件Props接口</li>
-                        <li>主题和游戏数据类型</li>
-                        <li>事件处理函数类型</li>
-                    </ul>
-                </li>
-                <li><strong>index.ts</strong>：统一导出机制，简化组件导入</li>
+                <li><strong>components/ui/index.ts</strong>：统一导出机制，简化组件导入</li>
             </ul>
         </section>
         

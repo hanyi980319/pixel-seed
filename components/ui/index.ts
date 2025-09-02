@@ -17,4 +17,4 @@ export { default as CurvedLoop } from './CurvedLoop'
 export { default as ScrambleText } from './ScrambleText'
 
 // Export types
-export * from '../types'
+export * from '@/types'
