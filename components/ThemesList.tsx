@@ -50,7 +50,7 @@ const ThemesList: React.FC<ThemesListProps> = ({
                   ) : (
                     <img
                       alt={theme.name}
-                      src={theme.coverImage}
+                      src={theme.backgroundImage}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   )}

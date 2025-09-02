@@ -6,8 +6,6 @@ export interface Theme {
   id: GameTheme
   name: string
   description: string
-  icon: ReactNode
-  coverImage: string
   characterImage: string
   backgroundImage: string
   isLoading?: boolean
