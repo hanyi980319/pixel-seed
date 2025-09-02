@@ -6,23 +6,14 @@ export type CharacterType = 'player' | 'enemy' | 'npc'
 export type LevelType = 'ground' | 'underground' | 'sky'
 
 interface GameData {
-  character: {
-    url: string
-    actions: {
-      idle: string
-      walk: string
-      jump: string
-      attack: string
-    }
-  } | null
-  background: {
-    url: string
-    layers: {
-      background: string
-      midground: string
-      foreground: string
-    }
-  } | null
+  success?: boolean
+  data?: {
+    characterUrl: string
+    backgroundUrl: string
+  }
+  generationId?: string
+  timestamp?: string
+
 }
 
 interface GameStore {
@@ -74,7 +65,7 @@ export const useGameStore = create<GameStore>((set) => ({
   characterType: 'player',
   levelType: 'ground',
   currentAction: 'idle',
-  gameData: { character: null, background: null },
+  gameData: {},
   isLoading: false,
   loadingProgress: 0,
   loadingMessage: '',
@@ -103,7 +94,7 @@ export const useGameStore = create<GameStore>((set) => ({
     characterType: 'player',
     levelType: 'ground',
     currentAction: 'idle',
-    gameData: { character: null, background: null },
+    gameData: {},
     isLoading: false,
     loadingProgress: 0,
     loadingMessage: '',

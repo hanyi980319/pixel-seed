@@ -23,7 +23,17 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
         }
       }
     }
-    return gameData
+    // 适配新的数据结构
+    if (gameData?.data) {
+      return {
+        character: { url: gameData.data.characterUrl },
+        background: { url: gameData.data.backgroundUrl }
+      }
+    }
+    return {
+      character: null,
+      background: null
+    }
   }
 
   return (

@@ -78,10 +78,7 @@ export default function Home() {
                   loadingProgress={loadingProgress}
                   selectedTheme={selectedTheme}
                   themes={presetThemes}
-                  gameData={gameData ? {
-                    character: gameData.character ? { url: gameData.character.url } : undefined,
-                    background: gameData.background ? { url: gameData.background.url } : undefined
-                  } : undefined}
+                  gameData={gameData}
                 />
               </div>
             ) : (

@@ -210,7 +210,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                     style={{
-                      backgroundImage: `url(${gameData.background?.url || '/api/placeholder/background.png'})`,
+                      backgroundImage: `url(${gameData.data?.backgroundUrl || '/api/placeholder/background.png'})`,
                       backgroundSize: 'cover',
                     }}
                   >
@@ -235,7 +235,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                       <div
                         className="w-full h-full bg-cover bg-center bg-no-repeat pixelated"
                         style={{
-                          backgroundImage: `url(${gameData.character?.actions?.[currentAction as keyof typeof gameData.character.actions] || gameData.character?.url || '/api/placeholder/character.png'})`,
+                          backgroundImage: `url(${gameData.data?.characterUrl || '/api/placeholder/character.png'})`,
                         }}
                       />
                     </motion.div>

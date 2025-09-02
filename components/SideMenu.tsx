@@ -96,9 +96,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
 
       const requestBody = {
         theme: isCustomTheme ? (customThemeName.trim() || 'custom') : selectedTheme,
-        prompt: isCustomTheme ? customPrompt : selectedThemeInfo?.description || '',
-        characterType: characterType,
-        levelType: levelType
+        prompt: isCustomTheme ? customPrompt : selectedThemeInfo?.description || ''
       }
 
       const response = await fetch('/api/generate', {
@@ -115,8 +113,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
 
       const result = await response.json()
 
-      if (result.success) {
-        setGameData(result.data)
+      if (result.success && result.data) {
+        setGameData(result)
         setLoadingProgress(100)
         setLoadingMessage('Generation complete!')
 
@@ -126,9 +124,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
             return {
               ...theme,
               id: finalThemeId,
-              coverImage: result.data.background?.url || '',
-              characterImage: result.data.character?.url || '',
-              backgroundImage: result.data.background?.url || '',
+              characterImage: result.data.characterUrl || '',
+              backgroundImage: result.data.backgroundUrl || '',
               isLoading: false
             } as any
           }

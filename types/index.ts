@@ -13,12 +13,14 @@ export interface Theme {
 
 // 游戏数据类型
 export interface GameData {
-  character?: {
-    url: string
+  success?: boolean
+  data?: {
+    characterUrl: string
+    backgroundUrl: string
   }
-  background?: {
-    url: string
-  }
+  generationId?: string
+  timestamp?: string
+
 }
 
 // 项目头部组件Props

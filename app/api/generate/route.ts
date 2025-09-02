@@ -7,10 +7,8 @@ const API_KEY = 'sk-84083f55216c4c53ad9ebf77e3f2dc7f'
 
 // 请求参数类型
 interface GenerateRequest {
-  theme: 'epic-fantasy' | 'cyberpunk' | 'custom'
+  theme: string
   prompt: string
-  characterType: 'player' | 'enemy' | 'npc'
-  levelType: 'ground' | 'underground' | 'sky'
 }
 
 // 构建游戏风格提示词
@@ -76,7 +74,7 @@ async function callDashScopeAPI(prompt: string, type: 'character' | 'background'
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateRequest = await request.json()
-    const { theme, prompt, characterType, levelType } = body
+    const { theme, prompt } = body
 
     // 验证请求参数
     if (!theme || !prompt) {
@@ -105,12 +103,8 @@ export async function POST(request: NextRequest) {
     const response = {
       success: true,
       data: {
-        character: {
-          url: characterUrl,
-        },
-        background: {
-          url: backgroundUrl,
-        },
+        characterUrl,
+        backgroundUrl
       },
       generationId: `gen_${Date.now()}`,
       timestamp: new Date().toISOString()
