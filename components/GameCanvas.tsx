@@ -42,7 +42,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const initializeGround = useCallback(() => {
     const canvasWidth = 1000 // 游戏画布宽度
     const groundY = 400 // 地面y位置，基于地面指示线(底部上方125px)
-    
+
     // 创建一个完整的地面条带，覆盖整个画布宽度
     const tiles = [{
       id: 'ground-strip',
@@ -55,23 +55,71 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     setGroundTiles(tiles)
   }, [setGroundTiles])
 
-  // 初始化障碍物
+  // 智能障碍物生成算法
   const initializeObstacles = useCallback(() => {
     const canvasWidth = 1000
     const groundY = 400 // 地面y位置
-    
-    // 生成5个随机障碍物
-    for (let i = 0; i < 5; i++) {
-      const obstacle = {
-        id: `obstacle-${Math.random().toString(36).substr(2, 9)}-${i}-${Date.now()}`, // 使用随机字符串+索引+时间戳确保唯一性
-        x: Math.random() * (canvasWidth - 100) + 200, // 在200到900之间随机位置
-        y: groundY - 48, // 放置在地面纹理上方，与角色高度一致
-        width: 48, // 与角色宽度一致
-        height: 48, // 与角色高度一致
-        type: 'rock'
+    const obstacleWidth = 48
+    const obstacleHeight = 48
+    const minDistance = 80 // 最小安全距离
+    const startX = 150 // 起始生成位置，给角色留出空间
+    const endX = 850 // 结束生成位置，避免太靠近边界
+    const maxAttempts = 50 // 最大尝试次数，防止无限循环
+
+    const generatedObstacles = []
+    const targetCount = 6 // 目标障碍物数量
+
+    // 检查两个矩形是否重叠或距离过近
+    const isValidPosition = (newX: number, newY: number, existingObstacles: Array<{ x: number, y: number }>) => {
+      for (const existing of existingObstacles) {
+        const distanceX = Math.abs(newX - existing.x)
+        const distanceY = Math.abs(newY - existing.y)
+
+        // 检查是否满足最小距离要求
+        if (distanceX < minDistance && distanceY < minDistance) {
+          return false
+        }
       }
-      addObstacle(obstacle)
+      return true
     }
+
+    // 使用网格化方法确保均匀分布
+    const gridSize = Math.floor((endX - startX) / targetCount)
+
+    for (let i = 0; i < targetCount; i++) {
+      let attempts = 0
+      let validPosition = false
+      let obstacleX = 0
+      let obstacleY = groundY - obstacleHeight
+
+      while (!validPosition && attempts < maxAttempts) {
+        // 在当前网格区域内随机生成位置
+        const gridStart = startX + (i * gridSize)
+        const gridEnd = Math.min(gridStart + gridSize - obstacleWidth, endX - obstacleWidth)
+
+        obstacleX = Math.random() * (gridEnd - gridStart) + gridStart
+        obstacleY = groundY - obstacleHeight
+
+        validPosition = isValidPosition(obstacleX, obstacleY, generatedObstacles)
+        attempts++
+      }
+
+      // 如果找到有效位置，添加障碍物
+      if (validPosition) {
+        const obstacle = {
+          id: `obstacle-${Math.random().toString(36).substr(2, 9)}-${i}-${Date.now()}`,
+          x: obstacleX,
+          y: obstacleY,
+          width: obstacleWidth,
+          height: obstacleHeight,
+          type: 'rock'
+        }
+        generatedObstacles.push(obstacle)
+        addObstacle(obstacle)
+      }
+    }
+
+    console.log(`成功生成 ${generatedObstacles.length} 个障碍物，分布均匀且无重叠`)
   }, [addObstacle])
 
   // 设置玩家初始位置
@@ -149,100 +197,182 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   // 角色物理状态
   const [character, setCharacter] = useState({
     x: 50,
-    y: 85,
+    y: 352, // 与障碍物位置一致，紧贴地面纹理上方
     width: 48,
     height: 48,
     velocityY: 0,
     isJumping: false,
-    onGround: true
+    onGround: true,
+    facingDirection: 1 // 1为右，-1为左
   })
 
-  // 游戏循环
+  // 游戏循环 - 使用requestAnimationFrame优化性能
   useEffect(() => {
     if (isPaused || isGenerating) return
 
-    const gameLoop = setInterval(() => {
-      setCharacter(prev => {
-        let newX = prev.x
-        let newY = prev.y
-        let newVelocityY = prev.velocityY
-        let newIsJumping = prev.isJumping
-        let newOnGround = prev.onGround
-        let action = 'idle'
-        const playerWidth = 48
-        const playerHeight = 48
-        const gravity = 0.8
-        const jumpPower = -15
-        const groundY = 352 // 固定地面位置，与地面纹理对齐
+    let animationId: number
+    let lastTime = 0
+    const targetFPS = 60
+    const frameTime = 1000 / targetFPS
 
-        // 左右移动逻辑
-        if (keys.has('a') || keys.has('arrowleft')) {
-          const testX = Math.max(0, newX - 5)
-          if (!checkCollision(testX, newY, playerWidth, playerHeight)) {
-            newX = testX
-            action = 'Moving Left'
+    const gameLoop = (currentTime: number) => {
+      if (currentTime - lastTime >= frameTime) {
+        setCharacter(prev => {
+          let newX = prev.x
+          let newY = prev.y
+          let newVelocityY = prev.velocityY
+          let newIsJumping = prev.isJumping
+          let newOnGround = prev.onGround
+          let action = 'idle'
+          const playerWidth = 48
+          const playerHeight = 48
+          const gravity = 0.8
+          const jumpPower = -15
+          const groundY = 352 // 固定地面位置，与地面纹理对齐
+
+          let newFacingDirection = prev.facingDirection
+
+          // 左右移动逻辑
+          if (keys.has('a') || keys.has('arrowleft')) {
+            const testX = Math.max(0, newX - 5)
+            if (!checkCollision(testX, newY, playerWidth, playerHeight)) {
+              newX = testX
+              newFacingDirection = -1 // 面向左
+              action = 'Moving Left'
+            }
           }
-        }
-        if (keys.has('d') || keys.has('arrowright')) {
-          const testX = Math.min(800, newX + 5)
-          if (!checkCollision(testX, newY, playerWidth, playerHeight)) {
-            newX = testX
-            action = 'Moving Right'
+          if (keys.has('d') || keys.has('arrowright')) {
+            const testX = newX + 5
+            // 检查是否到达边界
+            if (testX >= 952) {
+              // 触发游戏结束 - 随机选择有趣的提示文案
+              const gameOverMessages = [
+                '🎯 恭喜探索者！你已到达世界的边缘！',
+                '🚀 太棒了！你成功穿越了整个关卡！',
+                '⭐ 任务完成！你是真正的跳跃大师！',
+                '🏆 出色！你征服了这片像素世界！',
+                '🎮 厉害！准备迎接下一个挑战吧！'
+              ]
+              const randomMessage = gameOverMessages[Math.floor(Math.random() * gameOverMessages.length)]
+              // 确保状态同步更新
+              setCurrentAction(`Game Over - ${randomMessage}`)
+              setTimeout(() => setIsPaused(true), 0) // 使用setTimeout确保currentAction先更新
+            } else if (!checkCollision(testX, newY, playerWidth, playerHeight)) {
+              newX = testX
+              newFacingDirection = 1 // 面向右
+              action = 'Moving Right'
+            }
           }
-        }
 
-        // 跳跃逻辑 - 只有在地面上才能跳跃
-        if (keys.has(' ') && newOnGround) {
-          newVelocityY = jumpPower
-          newIsJumping = true
-          newOnGround = false
-          action = 'Jumping'
-        }
-
-        // 应用重力
-        if (!newOnGround) {
-          newVelocityY += gravity
-          newY += newVelocityY
-
-          // 检查是否落地
-          if (newY >= groundY) {
-            newY = groundY
-            newVelocityY = 0
-            newIsJumping = false
-            newOnGround = true
+          // 跳跃逻辑 - 只有在地面上才能跳跃
+          if (keys.has(' ') && newOnGround) {
+            newVelocityY = jumpPower
+            newIsJumping = true
+            newOnGround = false
+            action = 'Jumping'
           }
-        }
 
-        // 碰撞检测
-        if (checkCollision(newX, newY, playerWidth, playerHeight)) {
-          // 如果发生碰撞，恢复到之前的位置
-          newX = prev.x
-          newY = prev.y
-        }
+          // 改进的重力和碰撞系统
+          if (!newOnGround) {
+            newVelocityY += gravity
+            const testY = newY + newVelocityY
 
-        if (action === 'idle' && newOnGround) {
-          setCurrentAction('Idle')
-        } else {
-          setCurrentAction(action)
-        }
+            // 检查是否落地（地面）
+            if (testY >= groundY) {
+              newY = groundY
+              newVelocityY = 0
+              newIsJumping = false
+              newOnGround = true
+            } else {
+              // 检查是否落在障碍物上
+              let landedOnObstacle = false
+              for (const obstacle of obstacles) {
+                if (newX + playerWidth > obstacle.x &&
+                  newX < obstacle.x + obstacle.width &&
+                  testY + playerHeight >= obstacle.y &&
+                  testY + playerHeight <= obstacle.y + 10 && // 允许10px的着陆容差
+                  newVelocityY > 0) { // 只有下落时才能着陆
+                  newY = obstacle.y - playerHeight
+                  newVelocityY = 0
+                  newIsJumping = false
+                  newOnGround = true
+                  landedOnObstacle = true
+                  break
+                }
+              }
 
-        // 更新玩家位置
-        setPlayerPosition({ x: newX, y: newY })
+              if (!landedOnObstacle) {
+                newY = testY
+              }
+            }
+          } else {
+            // 在地面或障碍物上时，检查是否仍有支撑
+            let hasSupport = false
 
-        return {
-          x: newX,
-          y: newY,
-          width: playerWidth,
-          height: playerHeight,
-          velocityY: newVelocityY,
-          isJumping: newIsJumping,
-          onGround: newOnGround
-        }
-      })
-    }, 16) // 60 FPS
+            // 检查地面支撑
+            if (newY >= groundY - 5) {
+              hasSupport = true
+            } else {
+              // 检查障碍物支撑
+              for (const obstacle of obstacles) {
+                if (newX + playerWidth > obstacle.x &&
+                  newX < obstacle.x + obstacle.width &&
+                  Math.abs(newY + playerHeight - obstacle.y) <= 5) {
+                  hasSupport = true
+                  break
+                }
+              }
+            }
 
-    return () => clearInterval(gameLoop)
-  }, [keys, isPaused, isGenerating, setPlayerPosition, checkCollision])
+            // 如果没有支撑，开始下落
+            if (!hasSupport) {
+              newOnGround = false
+              newVelocityY = 0
+            }
+          }
+
+          // 碰撞检测
+          if (checkCollision(newX, newY, playerWidth, playerHeight)) {
+            // 如果发生碰撞，恢复到之前的位置
+            newX = prev.x
+            newY = prev.y
+          }
+
+          if (action === 'idle' && newOnGround) {
+            setCurrentAction('Idle')
+          } else {
+            setCurrentAction(action)
+          }
+
+          // 更新玩家位置
+          setPlayerPosition({ x: newX, y: newY })
+
+          return {
+            x: newX,
+            y: newY,
+            width: playerWidth,
+            height: playerHeight,
+            velocityY: newVelocityY,
+            isJumping: newIsJumping,
+            onGround: newOnGround,
+            facingDirection: newFacingDirection
+          }
+        })
+
+        lastTime = currentTime
+      }
+
+      animationId = requestAnimationFrame(gameLoop)
+    }
+
+    animationId = requestAnimationFrame(gameLoop)
+
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId)
+      }
+    }
+  }, [keys, isPaused, isGenerating, setPlayerPosition, checkCollision, obstacles])
 
   const handleBackToMenu = () => {
     resetGame()
@@ -424,7 +554,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   top: playerPosition.y,
                 }}
                 animate={{
-                  scaleX: keys.has('a') || keys.has('arrowleft') ? -1 : 1,
+                  scaleX: character.facingDirection,
                 }}
                 transition={{ duration: 0.1 }}
               >
@@ -500,11 +630,30 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="absolute inset-0 bg-black/50 flex items-center justify-center z-30 cursor-pointer"
-                  onClick={togglePause}
+                  onClick={currentAction.includes('Game Over') ? handleBackToMenu : togglePause}
                 >
                   <div className="text-center">
-                    <h2 className="text-4xl font-bold text-white font-mono mb-4">Game Paused</h2>
-                    <p className="text-gray-300 font-mono">Press ESC or click anywhere to continue</p>
+                    <h2 className="text-4xl font-bold text-white font-mono mb-4">
+                      {currentAction.includes('Game Over') ? 'Game Over!' : 'Game Paused'}
+                    </h2>
+                    <p className="text-gray-300 font-mono mb-2">
+                      {currentAction.includes('Game Over')
+                        ? currentAction.replace('Game Over - ', '')
+                        : '按 ESC 键或点击任意位置继续游戏'}
+                    </p>
+                    {currentAction.includes('Game Over') && (
+                      <p className="text-yellow-300 font-mono text-sm">
+                        🌟 你的冒险精神值得称赞！
+                      </p>
+                    )}
+                    {currentAction.includes('Game Over') && (
+                      <button
+                        onClick={handleBackToMenu}
+                        className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500/30 to-purple-500/30 hover:from-blue-500/40 hover:to-purple-500/40 border border-white/40 rounded-lg text-white font-mono transition-all duration-200 transform hover:scale-105"
+                      >
+                        🏠 返回主菜单
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               )}
