@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { message } from 'antd'
 import { useGameStore, GameTheme } from '@/lib/store'
 import {
@@ -15,6 +15,7 @@ export interface SideMenuProps {
   onStartGame?: () => void
   onCreateTheme?: () => void
   onThemeUpdate?: (themes: any[]) => void
+  themesListRef?: React.RefObject<HTMLDivElement | null>
   className?: string
   style?: React.CSSProperties
 }
@@ -23,6 +24,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onStartGame,
   onCreateTheme,
   onThemeUpdate,
+  themesListRef,
   className,
   style
 }) => {
@@ -72,31 +74,33 @@ const SideMenu: React.FC<SideMenuProps> = ({
       }
     }
 
+    const selectedThemeInfo = presetThemes.find(theme => theme.id === selectedTheme)
+    const loadingThemeId = `loading-${Date.now()}` as GameTheme
+    const loadingTheme = {
+      id: loadingThemeId,
+      name: isCustomTheme ? (customThemeName.trim() || 'Custom Theme') : selectedThemeInfo?.name || 'Unknown Theme',
+      description: isCustomTheme ? customPrompt : selectedThemeInfo?.description || '',
+      coverImage: '',
+      characterImage: '',
+      backgroundImage: '',
+      isLoading: true
+    } as any
+    const updatedThemes = [...presetThemes, loadingTheme]
+    
     try {
       setLoading(true)
       setLoadingProgress(0)
       setLoadingMessage('Generating your pixel world...')
       setGameState('loading')
-
-      const selectedThemeInfo = presetThemes.find(theme => theme.id === selectedTheme)
-      const loadingThemeId = `loading-${Date.now()}` as GameTheme
-      const loadingTheme = {
-        id: loadingThemeId,
-        name: isCustomTheme ? (customThemeName.trim() || 'Custom Theme') : selectedThemeInfo?.name || 'Unknown Theme',
-        description: isCustomTheme ? customPrompt : selectedThemeInfo?.description || '',
-        coverImage: '',
-        characterImage: '',
-        backgroundImage: '',
-        isLoading: true
-      } as any
-      const updatedThemes = [...presetThemes, loadingTheme]
+      
       setPresetThemes(updatedThemes)
       setSelectedTheme(loadingThemeId)
       onThemeUpdate?.(updatedThemes)
 
       const requestBody = {
         theme: isCustomTheme ? (customThemeName.trim() || 'custom') : selectedTheme,
-        prompt: isCustomTheme ? customPrompt : selectedThemeInfo?.description || ''
+        prompt: isCustomTheme ? customPrompt : selectedThemeInfo?.description || '',
+        types: ['character', 'background', 'ground', 'obstacle'] as const
       }
 
       const response = await fetch('/api/generate', {
@@ -108,10 +112,21 @@ const SideMenu: React.FC<SideMenuProps> = ({
       })
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        if (response.status === 429 || (errorData && errorData.error && errorData.error.includes('rate limit'))) {
+          throw new Error('API请求频率过高，请稍后再试')
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const result = await response.json()
+
+      if (!result.success) {
+        if (result.error && result.error.includes('rate limit')) {
+          throw new Error('API请求频率过高，请稍后再试')
+        }
+        throw new Error(result.error || '图像生成失败')
+      }
 
       if (result.success && result.data) {
         setGameData(result)
@@ -119,13 +134,15 @@ const SideMenu: React.FC<SideMenuProps> = ({
         setLoadingMessage('Generation complete!')
 
         const finalThemeId = `custom-${Date.now()}` as GameTheme
-        const finalUpdatedThemes = presetThemes.map(theme => {
+        const finalUpdatedThemes = updatedThemes.map(theme => {
           if ((theme as any).isLoading) {
             return {
               ...theme,
               id: finalThemeId,
               characterImage: result.data.characterUrl || '',
               backgroundImage: result.data.backgroundUrl || '',
+              groundImage: result.data.groundUrl || '',
+              obstacleImage: result.data.obstacleUrl || '',
               isLoading: false
             } as any
           }
@@ -137,6 +154,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
         setSelectedTheme(finalThemeId)
         setIsThemeCreated(true)
         setGameState('menu')
+        message.success('Theme created successfully!')
+        
+        // 滚动到主题列表底部
+        setTimeout(() => {
+          if (themesListRef?.current) {
+            themesListRef.current.scrollTop = themesListRef.current.scrollHeight
+          }
+        }, 100)
 
         // Call external callback if provided
         onCreateTheme?.()
@@ -146,7 +171,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
     } catch (error) {
       console.error('Generation error:', error)
       message.error(`Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      const filteredThemes = presetThemes.filter(theme => !(theme as any).isLoading)
+      const filteredThemes = updatedThemes.filter(theme => !(theme as any).isLoading)
       setPresetThemes(filteredThemes)
       onThemeUpdate?.(filteredThemes)
       setGameState('menu')

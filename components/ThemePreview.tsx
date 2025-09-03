@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, Typography, Progress, Skeleton, Empty } from 'antd'
+import { Card, Typography, Progress, Skeleton, Empty, Image } from 'antd'
 import { ThemePreviewProps } from '@/types'
 
 const { Text } = Typography
@@ -19,7 +19,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       if (theme) {
         return {
           character: { url: theme.characterImage },
-          background: { url: theme.backgroundImage }
+          background: { url: theme.backgroundImage },
+          ground: { url: theme.groundImage },
+          obstacle: { url: theme.obstacleImage }
         }
       }
     }
@@ -27,12 +29,16 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
     if (gameData?.data) {
       return {
         character: { url: gameData.data.characterUrl },
-        background: { url: gameData.data.backgroundUrl }
+        background: { url: gameData.data.backgroundUrl },
+        ground: { url: gameData.data.groundUrl },
+        obstacle: { url: gameData.data.obstacleUrl }
       }
     }
     return {
       character: null,
-      background: null
+      background: null,
+      ground: null,
+      obstacle: null
     }
   }
 
@@ -44,14 +50,22 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
         height: '100%',
         borderRadius: '12px',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+      }}
+      styles={{
+        body: {
+          overflowY: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitScrollbar: 'none'
+        } as React.CSSProperties
       }}
     >
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div style={{ flex: 1 }}>
         {!isGenerating ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* 左右分栏区域 */}
-            <div style={{ flex: 1, display: 'flex', gap: '16px', marginBottom: '16px' }}>
+            {/* 上半部分：角色和背景 */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
               {/* 左侧：角色形象 */}
               <div style={{ flex: 1 }}>
                 <div style={{ marginBottom: '8px' }}>
@@ -77,16 +91,14 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 ) : (
                   getPreviewImages()?.character?.url ? (
-                    <div
+                    <Image
+                      src={getPreviewImages()?.character?.url}
+                      alt="Character"
                       style={{
                         width: '100%',
                         aspectRatio: '1',
                         borderRadius: '8px',
-                        overflow: 'hidden',
-                        backgroundImage: `url(${getPreviewImages()?.character?.url})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat'
+                        objectFit: 'cover'
                       }}
                     />
                   ) : (
@@ -95,7 +107,6 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                         width: '100%',
                         aspectRatio: '1',
                         borderRadius: '8px',
-                        overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -137,16 +148,14 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 ) : (
                   getPreviewImages()?.background?.url ? (
-                    <div
+                    <Image
+                      src={getPreviewImages()?.background?.url}
+                      alt="Background"
                       style={{
                         width: '100%',
                         aspectRatio: '1',
                         borderRadius: '8px',
-                        overflow: 'hidden',
-                        backgroundImage: `url(${getPreviewImages()?.background?.url})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat'
+                        objectFit: 'cover'
                       }}
                     />
                   ) : (
@@ -155,7 +164,6 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                         width: '100%',
                         aspectRatio: '1',
                         borderRadius: '8px',
-                        overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -165,6 +173,123 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                       <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                         description="No Background"
+                        style={{ margin: 0 }}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* 下半部分：地面纹理和障碍物 */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+              {/* 左侧：地面纹理 */}
+              <div style={{ flex: 1 }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Ground Texture</Text>
+                </div>
+                {isLoading ? (
+                  <div
+                    className="skeleton-image-full"
+                    style={{
+                      width: '100%',
+                      aspectRatio: '1',
+                      borderRadius: '8px',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <Skeleton.Image
+                      style={{
+                        width: '100%',
+                        height: '100%'
+                      }}
+                      active
+                    />
+                  </div>
+                ) : (
+                  getPreviewImages()?.ground?.url ? (
+                    <Image
+                      src={getPreviewImages()?.ground?.url}
+                      alt="Ground Texture"
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#f5f5f5'
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="No Ground"
+                        style={{ margin: 0 }}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* 右侧：障碍物 */}
+              <div style={{ flex: 1 }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Obstacle</Text>
+                </div>
+                {isLoading ? (
+                  <div
+                    className="skeleton-image-full"
+                    style={{
+                      width: '100%',
+                      aspectRatio: '1',
+                      borderRadius: '8px',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <Skeleton.Image
+                      style={{
+                        width: '100%',
+                        height: '100%'
+                      }}
+                      active
+                    />
+                  </div>
+                ) : (
+                  getPreviewImages()?.obstacle?.url ? (
+                    <Image
+                      src={getPreviewImages()?.obstacle?.url}
+                      alt="Obstacle"
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#f5f5f5'
+                      }}
+                    >
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="No Obstacle"
                         style={{ margin: 0 }}
                       />
                     </div>

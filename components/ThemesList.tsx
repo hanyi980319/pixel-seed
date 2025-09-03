@@ -1,16 +1,16 @@
 'use client'
 
+import React, { forwardRef } from 'react'
 import { Card, Space, Skeleton } from 'antd'
 import { ThemesListProps } from '../types'
 
-const ThemesList: React.FC<ThemesListProps> = ({
-  themes,
-  selectedTheme,
-  onThemeSelect
-}) => {
+const ThemesList = forwardRef<HTMLDivElement, ThemesListProps>((
+  { themes, selectedTheme, onThemeSelect },
+  ref
+) => {
   return (
     <Card
-      title="Themes List"
+      title="Theme List"
       style={{ width: '400px', height: '100%', display: 'flex', flexDirection: 'column' }}
       styles={{
         body: {
@@ -21,6 +21,7 @@ const ThemesList: React.FC<ThemesListProps> = ({
         } as React.CSSProperties
       }}
     >
+      <div ref={ref} style={{ height: '100%', overflowY: 'auto' }}>
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         {themes.map((theme) => (
           <div key={theme.id} style={{ width: '100%' }}>
@@ -69,8 +70,11 @@ const ThemesList: React.FC<ThemesListProps> = ({
           </div>
         ))}
       </Space>
+      </div>
     </Card>
   )
-}
+})
+
+ThemesList.displayName = 'ThemesList'
 
 export default ThemesList

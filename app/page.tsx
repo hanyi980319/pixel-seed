@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Splitter } from 'antd'
 import { useGameStore, GameTheme } from '@/lib/store'
 import {
@@ -23,6 +23,7 @@ export default function Home() {
 
   const [showGameInterface, setShowGameInterface] = useState(false)
   const [presetThemes, setPresetThemes] = useState(PRESET_THEMES)
+  const themesListRef = useRef<HTMLDivElement>(null)
 
   // Event handlers
   const handleThemeSelect = (themeId: GameTheme) => {
@@ -60,6 +61,7 @@ export default function Home() {
             <SideMenu
               onStartGame={handleStartGame}
               onThemeUpdate={handleThemeUpdate}
+              themesListRef={themesListRef}
             />
           </Splitter.Panel>
 
@@ -67,6 +69,7 @@ export default function Home() {
             {!showGameInterface ? (
               <div style={{ display: 'flex', gap: '20px', width: '100%', height: '100%' }}>
                 <ThemesList
+                  ref={themesListRef}
                   themes={presetThemes}
                   selectedTheme={selectedTheme}
                   onThemeSelect={handleThemeSelect}

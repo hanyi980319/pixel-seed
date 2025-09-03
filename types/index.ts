@@ -8,6 +8,8 @@ export interface Theme {
   description: string
   characterImage: string
   backgroundImage: string
+  groundImage: string
+  obstacleImage: string
   isLoading?: boolean
 }
 
@@ -17,6 +19,8 @@ export interface GameData {
   data?: {
     characterUrl: string
     backgroundUrl: string
+    groundUrl?: string
+    obstacleUrl?: string
   }
   generationId?: string
   timestamp?: string
