@@ -84,6 +84,7 @@ export interface GameCanvasProps {
   isGenerating?: boolean
   loadingProgress?: number
   loadingMessage?: string
+  onBackToMenu?: () => void
 }
 
 // 主菜单组件Props

@@ -86,6 +86,7 @@ export default function Home() {
                 isGenerating={false}
                 loadingProgress={loadingProgress}
                 loadingMessage={loadingMessage}
+                onBackToMenu={handleBackToMenu}
               />
             )}
           </Splitter.Panel>
