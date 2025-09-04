@@ -112,8 +112,22 @@ export const PRESET_THEMES: Theme[] = [
 - **主题预览**：显示主题描述和示例元素
 - **确认和重试按钮**：主题确认和重置功能
 - **Radio组件**：使用Ant Design Radio实现主题选择
+- **主题持久化存储**：使用localStorage保存用户创建的主题
+- **主题删除功能**：支持删除自定义主题（custom-前缀主题）
+- **主题创建流程**：完整的自定义主题创建和验证逻辑
+- **状态管理**：集成regeneratingImages状态管理四种图像类型的生成状态
 
-#### 4.3 游戏界面 (已实现)
+#### 4.3 主题预览界面 (已实现)
+- **四象限布局**：角色、背景、地面纹理、障碍物四个预览区域
+- **图像重新生成**：每个图像类型支持独立重新生成，带有重新生成按钮
+- **骨架屏加载**：使用Ant Design Skeleton组件显示加载状态
+- **删除按钮**：自定义主题支持删除功能，仅对custom-前缀主题显示
+- **响应式设计**：适配不同屏幕尺寸
+- **状态管理**：regeneratingImages状态控制各图像类型的加载状态
+- **权限控制**：删除按钮仅对自定义主题可见，预设主题不可删除
+- **交互反馈**：完整的错误处理和成功提示机制
+
+#### 4.4 游戏界面 (已实现)
 - **游戏画布**：使用CSS背景 + 绝对定位的混合渲染方案
 - **控制提示**：底部显示WASD/方向键操作说明
 - **实时信息面板**：显示角色位置、当前动作和游戏状态
@@ -121,17 +135,95 @@ export const PRESET_THEMES: Theme[] = [
 - **返回主菜单**：游戏内返回功能
 - **移动端适配**：响应式设计，支持不同屏幕尺寸
 
-#### 4.4 加载界面 (已实现)
+#### 4.5 加载界面 (已实现)
 - **进度条显示**：使用Ant Design Progress组件
 - **加载状态提示**：动态显示生成进度信息
-- **模拟生成过程**：当前使用模拟进度，待接入真实API
+- **骨架屏动画**：图像生成时显示骨架屏加载效果
+- **状态同步**：regeneratingImages状态与UI加载状态同步
 
-#### 4.5 游戏画布技术规格 (已实现)
+#### 4.6 游戏画布技术规格 (已实现)
 - **Canvas尺寸**：全屏响应式设计，适配不同设备
 - **角色位置**：初始位置(100, 400)，x轴移动范围0-800
 - **背景处理**：CSS background-size: cover 自适应
 - **动画帧率**：16ms间隔实现60fps游戏循环
 - **重力系统**：简单的重力效果，地面高度350px
+
+#### 4.7 状态管理架构 (已实现)
+
+**全局状态 (page.tsx)**
+- `currentTheme`: 当前选中的主题数据
+- `gameState`: 游戏运行状态 (menu/playing/paused)
+- `isLoading`: 加载状态标识
+- `loadingProgress`: 加载进度 (0-100)
+- `loadingMessage`: 加载提示信息
+- `regeneratingImages`: 图像重新生成状态对象
+  - `character`: boolean - 角色图像生成状态
+  - `background`: boolean - 背景图像生成状态
+  - `ground`: boolean - 地面图像生成状态
+  - `obstacle`: boolean - 障碍物图像生成状态
+
+**SideMenu组件状态管理**
+- `presetThemes`: 主题列表状态，包含预设和自定义主题
+- `isThemeCreated`: 主题创建完成标识
+- `customThemeName`: 自定义主题名称输入
+- 完整的主题创建和验证逻辑
+- regeneratingImages状态的设置和重置
+
+**ThemePreview组件功能**
+- 自定义主题删除权限控制（仅custom-前缀主题）
+- 图像重新生成按钮和状态管理
+- 骨架屏加载状态显示
+
+**持久化存储**
+- localStorage存储用户创建的主题
+- 主题数据自动保存和恢复
+- 支持主题删除和更新
+- 自定义主题使用custom-前缀标识
+
+**组件内部状态**
+- 各组件维护自身的UI状态
+- 表单输入状态
+- 临时交互状态
+
+#### 4.8 API设计 (规划中)
+
+**主题生成API**
+```typescript
+POST /api/generate-theme
+{
+  "prompt": "Epic Fantasy Adventure",
+  "elements": ["character", "background", "ground", "obstacle"]
+}
+
+Response:
+{
+  "themeId": "theme_123",
+  "name": "Epic Fantasy Adventure",
+  "description": "A magical realm filled with...",
+  "elements": {
+    "character": "base64_image_data",
+    "background": "base64_image_data",
+    "ground": "base64_image_data",
+    "obstacle": "base64_image_data"
+  }
+}
+```
+
+**单个图像重新生成API**
+```typescript
+POST /api/regenerate-image
+{
+  "themeId": "theme_123",
+  "imageType": "character" | "background" | "ground" | "obstacle",
+  "prompt": "Epic Fantasy Adventure"
+}
+
+Response:
+{
+  "imageType": "character",
+  "imageData": "base64_image_data"
+}
+```
 
 ## 技术架构
 
@@ -139,13 +231,14 @@ export const PRESET_THEMES: Theme[] = [
 - **框架**：Next.js 15.5.2 (已实现)
 - **样式**：Tailwind CSS 4.0 (已实现)
 - **游戏渲染**：混合方案 - 背景使用CSS，角色使用Canvas (已实现)
-- **状态管理**：Zustand 5.0.8 (已实现)
+- **状态管理**：Zustand 5.0.8 + localStorage持久化 (已实现)
 - **UI组件**：Ant Design 5.27.1 (已实现)
 - **HTTP客户端**：Fetch API (已实现)
 - **动画库**：Framer Motion 12.23.12 (已实现)
 - **图标库**：Ant Design Icons 6.0.0 + Lucide React 0.542.0 (已实现)
 - **组件架构**：模块化组件设计，统一导出管理 (已实现)
 - **配置管理**：集中化配置文件管理 (已实现)
+- **数据持久化**：localStorage API用于主题存储和状态管理 (已实现)
 
 ### 后端技术栈
 - **API路由**：Next.js API Routes
@@ -170,27 +263,11 @@ export const PRESET_THEMES: Theme[] = [
 ```
 components/
 ├── GameCanvas.tsx         # 游戏画布组件
-├── SideMenu.tsx          # 侧边菜单组件
-├── ThemePreview.tsx      # 主题预览组件
+├── SideMenu.tsx          # 侧边菜单组件 (主题选择/创建/删除)
+├── ThemePreview.tsx      # 主题预览组件 (四象限布局)
 ├── ThemesList.tsx        # 主题列表组件
+├── types.ts              # TypeScript类型定义 (含regeneratingImages)
 └── ui/                   # UI组件目录
-    ├── ActionButtons.tsx      # 操作按钮组件
-    ├── CircularText/          # 圆形文字组件
-    │   ├── index.css
-    │   └── index.tsx
-    ├── CurvedLoop/            # 曲线循环组件
-    │   ├── index.css
-    │   └── index.tsx
-    ├── ModelSelector.tsx      # 模型选择器组件
-    ├── ProgressIndicator.tsx  # 进度指示器组件
-    ├── ProjectHeader.tsx      # 项目头部组件
-    ├── ScrambleText/          # 文字扰动组件
-    │   ├── index.css
-    │   └── index.tsx
-    ├── ThemeCustomizer.tsx    # 主题定制器组件
-    └── index.ts               # 统一导出文件
-```├── types.ts               # TypeScript类型定义
-└── ui/                    # UI组件目录
     ├── ActionButtons.tsx      # 操作按钮组件
     ├── GameInterface.tsx      # 游戏界面组件
     ├── ModelSelector.tsx      # 模型选择器组件
@@ -200,21 +277,27 @@ components/
     ├── ThemePreview.tsx       # 主题预览组件
     ├── ThemesList.tsx         # 主题列表组件
     ├── CircularText/          # 圆形文字组件
+    │   ├── index.css
+    │   └── index.tsx
     ├── CurvedLoop/            # 曲线循环组件
+    │   ├── index.css
+    │   └── index.tsx
     ├── ScrambleText/          # 文字扰动组件
+    │   ├── index.css
+    │   └── index.tsx
     └── index.ts               # 统一导出文件
 ```
 
 #### 核心组件功能
-- **Menu.tsx**：主菜单组件，整合所有子组件，管理应用状态
+- **Menu.tsx**：主菜单组件，整合所有子组件，管理应用状态和regeneratingImages状态
 - **GameInterface.tsx**：游戏界面组件，处理游戏渲染和交互
 - **ProjectHeader.tsx**：项目头部，展示项目名称和描述
 - **ModelSelector.tsx**：AI模型选择和API Key配置
 - **ThemeCustomizer.tsx**：自定义主题名称和提示词输入
 - **ActionButtons.tsx**：创建主题和开始游戏按钮
-- **ThemesList.tsx**：预设主题列表展示和选择
-- **ThemePreview.tsx**：主题预览区域，显示角色和背景
-- **ProgressIndicator.tsx**：生成进度显示
+- **ThemesList.tsx**：预设主题列表展示和选择，支持自定义主题删除
+- **ThemePreview.tsx**：主题预览区域，四象限布局显示角色和背景，支持独立重新生成
+- **SideMenu.tsx**：侧边菜单，处理主题选择、创建、删除和状态回调
 
 #### 配置管理系统
 - **config.ts**：集中管理预设主题配置
