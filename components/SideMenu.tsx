@@ -20,6 +20,12 @@ export interface SideMenuProps {
     prompt: string;
     types: readonly ('character' | 'background' | 'ground' | 'obstacle')[];
   }) => Promise<any>
+  onRegeneratingImagesChange?: (regeneratingImages: {
+    character: boolean;
+    background: boolean;
+    ground: boolean;
+    obstacle: boolean;
+  }) => void
   themesListRef?: React.RefObject<HTMLDivElement | null>
   className?: string
   style?: React.CSSProperties
@@ -30,6 +36,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onCreateTheme,
   onThemeUpdate,
   generateImages,
+  onRegeneratingImagesChange,
   themesListRef,
   className,
   style
@@ -97,6 +104,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
       setLoadingMessage('Generating your pixel world...')
       setGameState('loading')
       
+      // Set all image types to regenerating state
+      onRegeneratingImagesChange?.({
+        character: true,
+        background: true,
+        ground: true,
+        obstacle: true
+      })
+      
       setPresetThemes(updatedThemes)
       setSelectedTheme(loadingThemeId)
       onThemeUpdate?.(updatedThemes)
@@ -139,6 +154,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
         setGameState('menu')
         message.success('Theme created successfully!')
         
+        // Reset regenerating images state
+        onRegeneratingImagesChange?.({
+          character: false,
+          background: false,
+          ground: false,
+          obstacle: false
+        })
+        
         // 滚动到主题列表底部
         setTimeout(() => {
           if (themesListRef?.current) {
@@ -158,6 +181,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
       setPresetThemes(filteredThemes)
       onThemeUpdate?.(filteredThemes)
       setGameState('menu')
+      
+      // Reset regenerating images state on error
+      onRegeneratingImagesChange?.({
+        character: false,
+        background: false,
+        ground: false,
+        obstacle: false
+      })
     } finally {
       setLoading(false)
     }

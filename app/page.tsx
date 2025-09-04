@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Splitter, message } from 'antd'
 import { useGameStore, GameTheme } from '@/lib/store'
 import {
@@ -15,17 +15,53 @@ export default function Home() {
   const {
     selectedTheme,
     setSelectedTheme,
-    loadingProgress,
-    loadingMessage,
+    gameState,
+    setGameState,
     gameData,
+    setGameData,
     isLoading,
     setLoading,
+    loadingMessage,
     setLoadingMessage
   } = useGameStore()
 
   const [showGameInterface, setShowGameInterface] = useState(false)
   const [presetThemes, setPresetThemes] = useState(PRESET_THEMES)
+  const [regeneratingImages, setRegeneratingImages] = useState<{
+    character: boolean;
+    background: boolean;
+    ground: boolean;
+    obstacle: boolean;
+  }>({ character: false, background: false, ground: false, obstacle: false })
   const themesListRef = useRef<HTMLDivElement>(null)
+
+  // localStorage 相关函数
+  const saveThemesToStorage = (themes: any[]) => {
+    try {
+      localStorage.setItem('pixel-seed-themes', JSON.stringify(themes))
+    } catch (error) {
+      console.error('Failed to save themes to localStorage:', error)
+    }
+  }
+
+  const loadThemesFromStorage = () => {
+    try {
+      const stored = localStorage.getItem('pixel-seed-themes')
+      if (stored) {
+        const parsedThemes = JSON.parse(stored)
+        return parsedThemes
+      }
+    } catch (error) {
+      console.error('Failed to load themes from localStorage:', error)
+    }
+    return PRESET_THEMES
+  }
+
+  // 初始化时从 localStorage 读取主题数据
+  useEffect(() => {
+    const storedThemes = loadThemesFromStorage()
+    setPresetThemes(storedThemes)
+  }, [])
 
   // Event handlers
   const handleThemeSelect = (themeId: GameTheme) => {
@@ -42,6 +78,7 @@ export default function Home() {
 
   const handleThemeUpdate = (themes: any[]) => {
     setPresetThemes(themes)
+    saveThemesToStorage(themes)
   }
 
   // Common image generation logic
@@ -78,7 +115,29 @@ export default function Home() {
     return result
   }
 
-  const handleRegenerateImage = async (themeId: string, imageType: 'character' | 'background' | 'ground' | 'obstacle') => {
+  const handleDeleteTheme = (themeId: string) => {
+    // 只允许删除自定义主题（ID以custom-开头）
+    if (!themeId.startsWith('custom-')) {
+      message.error('只能删除自定义主题')
+      return
+    }
+
+    const updatedThemes = presetThemes.filter(theme => theme.id !== themeId)
+    setPresetThemes(updatedThemes)
+    saveThemesToStorage(updatedThemes)
+    
+    // 如果删除的是当前选中的主题，切换到默认主题
+    if (selectedTheme === themeId) {
+      setSelectedTheme('fantasy')
+    }
+    
+    message.success('主题删除成功')
+  }
+
+  const handleRegenerateImage = async (themeId: string, imageType: 'character' | 'background' | 'ground' | 'obstacle'): Promise<void> => {
+    // Set regenerating state for the specific image type
+    setRegeneratingImages(prev => ({ ...prev, [imageType]: true }))
+    
     try {
       // Find the theme to regenerate
       const themeToRegenerate = presetThemes.find(theme => theme.id === themeId)
@@ -109,12 +168,15 @@ export default function Home() {
         })
         
         setPresetThemes(updatedThemes)
+        saveThemesToStorage(updatedThemes)
         
         message.success(`${imageType} regenerated successfully!`)
+      } else {
+        throw new Error(result.error || '图像重新生成失败')
       }
-    } catch (error) {
-      console.error('Regeneration error:', error)
-      message.error(error instanceof Error ? error.message : '图像重新生成失败')
+    } finally {
+      // Reset regenerating state for the specific image type
+      setRegeneratingImages(prev => ({ ...prev, [imageType]: false }))
     }
   }
 
@@ -138,6 +200,7 @@ export default function Home() {
               onStartGame={handleStartGame}
               onThemeUpdate={handleThemeUpdate}
               generateImages={generateImages}
+              onRegeneratingImagesChange={setRegeneratingImages}
               themesListRef={themesListRef}
             />
           </Splitter.Panel>
@@ -154,16 +217,17 @@ export default function Home() {
 
                 <ThemePreview
                   isLoading={isLoading}
-                  loadingProgress={loadingProgress}
+                  loadingMessage={loadingMessage}
                   selectedTheme={selectedTheme}
                   themes={presetThemes}
                   gameData={gameData}
+                  regeneratingImages={regeneratingImages}
                   onRegenerateImage={handleRegenerateImage}
+                  onDeleteTheme={handleDeleteTheme}
                 />
               </div>
             ) : (
               <GameCanvas
-                loadingProgress={loadingProgress}
                 loadingMessage={loadingMessage}
                 onBackToMenu={handleBackToMenu}
               />

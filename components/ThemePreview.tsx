@@ -1,54 +1,21 @@
 'use client'
 
-import { Card, Typography, Skeleton, Empty, Image, Button } from 'antd'
-import { RotateCcw } from 'lucide-react'
+import { Card, Typography, Empty, Image, Button, Skeleton } from 'antd'
+import { RotateCcw, Trash2 } from 'lucide-react'
 import { ThemePreviewProps } from '@/types'
-import { useState, useEffect } from 'react'
 
 const { Text } = Typography
 
 const ThemePreview: React.FC<ThemePreviewProps> = ({
   isLoading,
-  loadingProgress,
+  loadingMessage,
   gameData,
   selectedTheme,
   themes,
-  onRegenerateImage
+  regeneratingImages = { character: false, background: false, ground: false, obstacle: false },
+  onRegenerateImage,
+  onDeleteTheme
 }) => {
-  const [regeneratingImages, setRegeneratingImages] = useState<{
-    character: boolean;
-    background: boolean;
-    ground: boolean;
-    obstacle: boolean;
-  }>({
-    character: false,
-    background: false,
-    ground: false,
-    obstacle: false
-  })
-
-  // Reset regenerating state when images are updated
-  useEffect(() => {
-    const currentImages = getPreviewImages();
-    if (currentImages) {
-      setRegeneratingImages(prev => {
-        const newState = { ...prev };
-        if (currentImages.character?.url && prev.character) {
-          newState.character = false;
-        }
-        if (currentImages.background?.url && prev.background) {
-          newState.background = false;
-        }
-        if (currentImages.ground?.url && prev.ground) {
-          newState.ground = false;
-        }
-        if (currentImages.obstacle?.url && prev.obstacle) {
-          newState.obstacle = false;
-        }
-        return newState;
-      });
-    }
-  }, [themes, selectedTheme, gameData]);
   const getPreviewImages = () => {
     if (selectedTheme && selectedTheme !== 'custom') {
       const theme = themes.find(t => t.id === selectedTheme)
@@ -78,9 +45,34 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
     }
   }
 
+  // 判断当前主题是否可以删除（只有自定义主题可以删除）
+  const canDeleteCurrentTheme = () => {
+    return selectedTheme && typeof selectedTheme === 'string' && selectedTheme.startsWith('custom-')
+  }
+
+  // 获取删除按钮
+  const getDeleteButton = () => {
+    if (!canDeleteCurrentTheme() || !onDeleteTheme) {
+      return null
+    }
+
+    return (
+      <Button
+        type="primary"
+        danger
+        icon={<Trash2 size={14} />}
+        onClick={() => onDeleteTheme(selectedTheme as string)}
+        title="删除主题"
+      >
+        Delete
+      </Button>
+    )
+  }
+
   return (
     <Card
       title="Theme Preview"
+      extra={getDeleteButton()}
       style={{
         flex: 1,
         height: '100%',
@@ -161,10 +153,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   <Button
                     size="small"
                     icon={<RotateCcw size={12} />}
-                    onClick={() => {
-                      setRegeneratingImages(prev => ({ ...prev, character: true }))
-                      onRegenerateImage(selectedTheme, 'character')
-                    }}
+                    onClick={() => onRegenerateImage(selectedTheme, 'character')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
                     loading={regeneratingImages.character}
                   >
@@ -234,10 +223,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   <Button
                     size="small"
                     icon={<RotateCcw size={12} />}
-                    onClick={() => {
-                      setRegeneratingImages(prev => ({ ...prev, background: true }))
-                      onRegenerateImage(selectedTheme, 'background')
-                    }}
+                    onClick={() => onRegenerateImage(selectedTheme, 'background')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
                     loading={regeneratingImages.background}
                   >
@@ -310,10 +296,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   <Button
                     size="small"
                     icon={<RotateCcw size={12} />}
-                    onClick={() => {
-                      setRegeneratingImages(prev => ({ ...prev, ground: true }))
-                      onRegenerateImage(selectedTheme, 'ground')
-                    }}
+                    onClick={() => onRegenerateImage(selectedTheme, 'ground')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
                     loading={regeneratingImages.ground}
                   >
@@ -383,10 +366,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   <Button
                     size="small"
                     icon={<RotateCcw size={12} />}
-                    onClick={() => {
-                      setRegeneratingImages(prev => ({ ...prev, obstacle: true }))
-                      onRegenerateImage(selectedTheme, 'obstacle')
-                    }}
+                    onClick={() => onRegenerateImage(selectedTheme, 'obstacle')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
                     loading={regeneratingImages.obstacle}
                   >

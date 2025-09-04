@@ -70,11 +70,18 @@ export interface ThemesListProps {
 // 主题预览组件Props
 export interface ThemePreviewProps {
   isLoading: boolean
-  loadingProgress: number
+  loadingMessage?: string
   gameData?: GameData
   selectedTheme: GameTheme
   themes: Theme[]
-  onRegenerateImage?: (themeId: string, imageType: 'character' | 'background' | 'ground' | 'obstacle') => void
+  regeneratingImages?: {
+    character: boolean;
+    background: boolean;
+    ground: boolean;
+    obstacle: boolean;
+  }
+  onRegenerateImage?: (themeId: string, imageType: 'character' | 'background' | 'ground' | 'obstacle') => Promise<void>
+  onDeleteTheme?: (themeId: string) => void
 }
 
 // 进度指示器组件Props
