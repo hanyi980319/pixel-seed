@@ -86,6 +86,7 @@ export interface ThemePreviewProps {
 
 // 进度指示器组件Props
 export interface ProgressIndicatorProps {
+  isGenerating: boolean
   loadingMessage: string
   loadingProgress: number
 }
