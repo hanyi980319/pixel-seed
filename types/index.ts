@@ -84,12 +84,7 @@ export interface ThemePreviewProps {
   onDeleteTheme?: (themeId: string) => void
 }
 
-// 进度指示器组件Props
-export interface ProgressIndicatorProps {
-  isGenerating: boolean
-  loadingMessage: string
-  loadingProgress: number
-}
+
 
 // 游戏画布组件Props
 export interface GameCanvasProps {
