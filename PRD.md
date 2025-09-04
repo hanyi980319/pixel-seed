@@ -611,12 +611,16 @@ const [characterUrl, backgroundUrl] = await Promise.all([
 // 游戏模板配置 (configs/index.ts)
 export const GAME_TEMPLATES = {
   positive: {
-    character: '2D side-scrolling pixel art character, 16-bit retro style, high contrast colors, hand-drawn texture, dynamic lighting effects, sharp crisp pixel outline, bold character silhouette, distinct edge definition, complete full body sprite from head to feet, roguelike design, facing right direction, perfect right-facing side view profile pose, centered composition with proper proportions, standing upright posture, full character visible within frame, absolutely pure white background #FFFFFF, completely isolated character sprite, zero background elements',
-    background: '2D side-scrolling pixel art background, horizontal scrolling composition, high saturation dark tones, hand-drawn texture, dynamic lighting, no characters'
+    character: '2D side-scrolling pixel art character, 16-bit retro style, high contrast colors, hand-drawn texture, dynamic lighting effects, razor-sharp pixel outline, ultra-bold character silhouette, crystal-clear edge definition, complete full body sprite from head to feet, roguelike design, facing right direction, perfect right-facing side view profile pose, centered composition with proper proportions, standing upright posture, full character visible within frame, absolutely pure transparent background, completely isolated character sprite with perfect transparency, zero background interference',
+    background: '2D side-scrolling pixel art background, horizontal scrolling composition, high saturation dark tones, hand-drawn texture, dynamic lighting, atmospheric depth, layered parallax elements, no characters',
+    ground: '2D side-scrolling pixel art ground texture, flat rectangular tile design, simple soil or dirt pattern. CRITICAL: texture must extend completely to all four edges of the image with zero margin, filling 100% of the square area from edge to edge with complete surface coverage and no empty spaces. Texture pattern must reach every pixel boundary with uniform distribution across full tile dimensions. No borders, no gaps at edges, edge-to-edge coverage mandatory. Seamless tileable pattern, minimal texture details, basic earth tones, clean pixel art style, 16-bit retro aesthetic, solid platform surface texture, game-ready tileable asset, absolutely pure white background #FFFFFF, isolated ground tile sprite',
+    obstacle: '2D side-scrolling pixel art obstacle object, 16-bit retro style, high contrast colors, hand-drawn texture, solid blocking object, game collision asset, distinct shape definition, complete obstacle sprite, centered composition, thematically consistent design elements that match the current theme style and aesthetic, contextually appropriate materials and colors that harmonize with the theme environment, obstacle design that feels naturally integrated within the theme world, absolutely pure white background #FFFFFF, completely isolated obstacle sprite'
   },
   negative: {
     character: '详细的角色反向约束...',
-    background: '详细的背景反向约束...'
+    background: '详细的背景反向约束...',
+    ground: '详细的地面纹理反向约束...',
+    obstacle: '详细的障碍物反向约束...'
   }
 }
 
