@@ -41,7 +41,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 初始化地面系统
   const initializeGround = useCallback(() => {
-    const canvasWidth = 1000 // 游戏画布宽度
+    // 动态获取实际画布宽度
+    let canvasWidth = 1000 // 默认宽度作为后备
+    if (gameCanvasRef.current) {
+      const rect = gameCanvasRef.current.getBoundingClientRect()
+      canvasWidth = Math.max(rect.width, 1000) // 确保至少1000px宽度
+    }
+    
     const groundY = 400 // 地面y位置，基于地面指示线(底部上方125px)
 
     // 创建一个完整的地面条带，覆盖整个画布宽度
@@ -58,13 +64,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 智能障碍物生成算法
   const initializeObstacles = useCallback(() => {
-    const canvasWidth = 1000
+    // 动态获取实际画布宽度
+    let canvasWidth = 1000 // 默认宽度作为后备
+    if (gameCanvasRef.current) {
+      const rect = gameCanvasRef.current.getBoundingClientRect()
+      canvasWidth = Math.max(rect.width, 1000) // 确保至少1000px宽度
+    }
+    
     const groundY = 400 // 地面y位置
     const obstacleWidth = 48
     const obstacleHeight = 48
     const minDistance = 80 // 最小安全距离
     const startX = 150 // 起始生成位置，给角色留出空间
-    const endX = 850 // 结束生成位置，避免太靠近边界
+    const endX = canvasWidth - 150 // 动态计算结束位置，避免太靠近边界
     const maxAttempts = 50 // 最大尝试次数，防止无限循环
 
     const generatedObstacles = []
@@ -163,6 +175,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth <= 768)
+      // 当屏幕尺寸改变时，重新初始化地面以适应新的画布宽度
+      setTimeout(() => {
+        initializeGround()
+      }, 100) // 延迟执行，确保DOM更新完成
     }
 
     checkScreenSize()
@@ -175,7 +191,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [handleKeyDown, handleKeyUp])
+  }, [handleKeyDown, handleKeyUp, initializeGround])
 
   // 碰撞检测函数
   const checkCollision = useCallback((x: number, y: number, width: number = 48, height: number = 48) => {
@@ -493,7 +509,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   height: tile.height,
                   backgroundImage: themeImages.ground ? `url(${themeImages.ground})` : 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,.1) 2px, rgba(255,255,255,.1) 4px)',
                   backgroundColor: themeImages.ground ? 'transparent' : '#8B4513',
-                  backgroundSize: 'cover',
+                  backgroundSize: 'contain',
                   backgroundPosition: 'top left',
                   backgroundRepeat: 'repeat',
                   border: '1px solid #654321'
