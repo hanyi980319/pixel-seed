@@ -52,9 +52,10 @@ export interface ThemeCustomizerProps {
 export interface ActionButtonsProps {
   isThemeCreated: boolean
   isLoading: boolean
-  isGenerating: boolean
-  selectedTheme: GameTheme
+  selectedTheme: string | null
   customPrompt: string
+  customThemeName: string
+  apiKey: string
   onCreateTheme: () => void
   onStartGame: () => void
 }
@@ -68,7 +69,6 @@ export interface ThemesListProps {
 
 // 主题预览组件Props
 export interface ThemePreviewProps {
-  isGenerating: boolean
   isLoading: boolean
   loadingProgress: number
   gameData?: GameData
@@ -78,14 +78,12 @@ export interface ThemePreviewProps {
 
 // 进度指示器组件Props
 export interface ProgressIndicatorProps {
-  isGenerating: boolean
   loadingMessage: string
   loadingProgress: number
 }
 
 // 游戏画布组件Props
 export interface GameCanvasProps {
-  isGenerating?: boolean
   loadingProgress?: number
   loadingMessage?: string
   onBackToMenu?: () => void

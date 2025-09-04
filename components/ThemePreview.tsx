@@ -6,7 +6,6 @@ import { ThemePreviewProps } from '@/types'
 const { Text } = Typography
 
 const ThemePreview: React.FC<ThemePreviewProps> = ({
-  isGenerating,
   isLoading,
   loadingProgress,
   gameData,
@@ -62,8 +61,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       }}
     >
       <div style={{ flex: 1 }}>
-        {!isGenerating ? (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* 上半部分：角色和背景 */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
               {/* 左侧：角色形象 */}
@@ -331,7 +329,6 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
               Generating your pixel world...
             </Text>
           </div>
-        )}
       </div>
     </Card>
   )

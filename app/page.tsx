@@ -76,7 +76,6 @@ export default function Home() {
                 />
 
                 <ThemePreview
-                  isGenerating={false}
                   isLoading={isLoading}
                   loadingProgress={loadingProgress}
                   selectedTheme={selectedTheme}
@@ -86,7 +85,6 @@ export default function Home() {
               </div>
             ) : (
               <GameCanvas
-                isGenerating={false}
                 loadingProgress={loadingProgress}
                 loadingMessage={loadingMessage}
                 onBackToMenu={handleBackToMenu}

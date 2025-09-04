@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type GameTheme = 'epic-fantasy' | 'cyberpunk' | 'custom'
+export type GameTheme = 'fantasy' | 'cyberpunk' | 'custom'
 export type GameState = 'menu' | 'loading' | 'playing'
 export type CharacterType = 'player' | 'enemy' | 'npc'
 export type LevelType = 'ground' | 'underground' | 'sky'
@@ -94,7 +94,7 @@ interface GameStore {
 export const useGameStore = create<GameStore>((set) => ({
   // 初始状态
   gameState: 'menu',
-  selectedTheme: 'epic-fantasy',
+  selectedTheme: 'fantasy',
   customPrompt: '',
   characterType: 'player',
   levelType: 'ground',
@@ -133,7 +133,7 @@ export const useGameStore = create<GameStore>((set) => ({
   // 重置游戏
   resetGame: () => set({
     gameState: 'menu',
-    selectedTheme: 'epic-fantasy',
+    selectedTheme: 'fantasy',
     customPrompt: '',
     characterType: 'player',
     levelType: 'ground',

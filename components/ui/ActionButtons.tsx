@@ -8,9 +8,10 @@ import { ActionButtonsProps } from '@/types'
 const ActionButtons: React.FC<ActionButtonsProps> = ({
   isThemeCreated,
   isLoading,
-  isGenerating,
   selectedTheme,
   customPrompt,
+  customThemeName,
+  apiKey,
   onCreateTheme,
   onStartGame
 }) => {
@@ -23,7 +24,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         onClick={onCreateTheme}
         loading={isLoading}
         style={{ width: '100%', height: '48px' }}
-        disabled={selectedTheme === 'custom' && !customPrompt.trim()}
+        disabled={!apiKey.trim() || !customThemeName.trim() || !customPrompt.trim()}
       >
         {!isThemeCreated ? 'Create Theme' : 'Reset'}
       </Button>
@@ -32,10 +33,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         size="large"
         icon={<PlayCircleOutlined />}
         onClick={onStartGame}
-        loading={isGenerating}
         style={{ width: '100%', height: '48px' }}
+        disabled={!selectedTheme}
       >
-        {isGenerating ? 'Generating...' : 'Start Game'}
+        Start Game
       </Button>
     </Space>
   )

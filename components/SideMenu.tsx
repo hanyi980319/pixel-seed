@@ -48,7 +48,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
 
   // Local state management
   const [showCustomInput, setShowCustomInput] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
+
   const [customThemeName, setCustomThemeName] = useState('')
   const [apiKey, setApiKey] = useState('sk-84083f55216c4c53ad9ebf77e3f2dc7f')
   const [selectedModel, setSelectedModel] = useState('Qwen-Image')
@@ -181,29 +181,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
   }
 
   const handleStartGame = () => {
-    if (selectedTheme === 'custom' && !customPrompt.trim()) {
-      message.error('Please enter a custom theme description')
-      return
-    }
-
-    // Set generating state
-    setIsGenerating(true)
-    setLoadingProgress(0)
-    setLoadingMessage('Initializing generation...')
-    setGameState('playing')
-
-    let currentProgress = 0
-    const interval = setInterval(() => {
-      currentProgress += Math.random() * 15
-      if (currentProgress >= 100) {
-        clearInterval(interval)
-        setLoadingProgress(100)
-        setIsGenerating(false)
-      } else {
-        setLoadingProgress(Math.round(currentProgress * 100) / 100)
-      }
-    }, 200)
-
     // Call external callback if provided
     onStartGame?.()
   }
@@ -243,9 +220,10 @@ const SideMenu: React.FC<SideMenuProps> = ({
         <ActionButtons
           isThemeCreated={isThemeCreated}
           isLoading={isLoading}
-          isGenerating={isGenerating}
           selectedTheme={selectedTheme}
           customPrompt={customPrompt}
+          customThemeName={customThemeName}
+          apiKey={apiKey}
           onCreateTheme={handleCreateTheme}
           onStartGame={handleStartGame}
         />

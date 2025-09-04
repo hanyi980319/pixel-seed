@@ -10,7 +10,6 @@ import { PRESET_THEMES } from '@/configs'
 const { Text } = Typography
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
-  isGenerating = false,
   loadingProgress = 0,
   loadingMessage = 'Loading...',
   onBackToMenu
@@ -133,14 +132,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 游戏初始化
   useEffect(() => {
-    if (!isGenerating) {
-      initializeGround()
-      if (obstacles.length === 0) {
-        initializeObstacles()
-      }
-      setPlayerInitialPosition()
+    initializeGround()
+    if (obstacles.length === 0) {
+      initializeObstacles()
     }
-  }, [isGenerating, initializeGround, initializeObstacles, setPlayerInitialPosition])
+    setPlayerInitialPosition()
+  }, [initializeGround, initializeObstacles, setPlayerInitialPosition])
 
 
   // 键盘控制
@@ -210,7 +207,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 游戏循环 - 使用requestAnimationFrame优化性能
   useEffect(() => {
-    if (isPaused || isGenerating) return
+    if (isPaused) return
 
     let animationId: number
     let lastTime = 0
@@ -381,7 +378,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         cancelAnimationFrame(animationId)
       }
     }
-  }, [keys, isPaused, isGenerating, setPlayerPosition, checkCollision, obstacles])
+  }, [keys, isPaused, setPlayerPosition, checkCollision, obstacles])
 
   const handleBackToMenu = () => {
     resetGame()
@@ -437,7 +434,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     }
   }
 
-  const containerPadding = isMobile ? '10px' : '20px'
   const cardPadding = isMobile ? '12px' : '20px'
   const themeImages = getThemeImages()
 
@@ -461,8 +457,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         backgroundColor: '#fafafa'
       }}
     >
-
-
       {/* 游戏内容区域 */}
       <div
         ref={gameCanvasRef}
@@ -479,211 +473,210 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           minHeight: isMobile ? '300px' : '400px',
           position: 'relative'
         }}>
-        {isGenerating ? (
-          <div style={{
+        <div
+          style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '20px',
             padding: '40px'
+          }}
+        >
+          <div style={{
+            fontSize: isMobile ? '48px' : '64px',
+            marginBottom: '20px'
+          }}>🎮</div>
+
+          <Text style={{
+            fontSize: isMobile ? '16px' : '18px',
+            color: '#666',
+            textAlign: 'center',
+            marginBottom: '16px'
           }}>
-            <div style={{
-              fontSize: isMobile ? '48px' : '64px',
-              marginBottom: '20px'
-            }}>🎮</div>
+            {loadingMessage}
+          </Text>
 
-            <Text style={{
-              fontSize: isMobile ? '16px' : '18px',
-              color: '#666',
-              textAlign: 'center',
-              marginBottom: '16px'
-            }}>
-              {loadingMessage}
-            </Text>
+          <Progress
+            percent={loadingProgress}
+            strokeColor={{
+              '0%': '#108ee9',
+              '100%': '#87d068',
+            }}
+            style={{ width: isMobile ? '200px' : '300px' }}
+          />
 
-            <Progress
-              percent={loadingProgress}
-              strokeColor={{
-                '0%': '#108ee9',
-                '100%': '#87d068',
-              }}
-              style={{ width: isMobile ? '200px' : '300px' }}
-            />
-
-            <Text style={{
-              fontSize: '14px',
-              color: '#999',
-              marginTop: '8px'
-            }}>
-              {Math.round(loadingProgress)}% 完成
-            </Text>
-          </div>
-        ) : (
-          // 游戏Canvas内容
-          <div className="w-full h-full relative overflow-hidden" style={{
-            backgroundImage: themeImages.background ? `url(${themeImages.background})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
+          <Text style={{
+            fontSize: '14px',
+            color: '#999',
+            marginTop: '8px'
           }}>
-            <div className="relative w-full h-full">
-              {/* 地面瓦片 */}
-              {groundTiles.map(tile => (
-                <div
-                  key={tile.id}
-                  className="absolute"
-                  style={{
-                    left: tile.x,
-                    top: tile.y,
-                    width: tile.width,
-                    height: tile.height,
-                    backgroundImage: themeImages.ground ? `url(${themeImages.ground})` : 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,.1) 2px, rgba(255,255,255,.1) 4px)',
-                    backgroundColor: themeImages.ground ? 'transparent' : '#8B4513',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'top left',
-                    backgroundRepeat: 'repeat',
-                    border: '1px solid #654321'
-                  }}
-                />
-              ))}
-
-              {/* 障碍物 */}
-              {obstacles.map(obstacle => (
-                <div
-                  key={obstacle.id}
-                  className="absolute rounded"
-                  style={{
-                    left: obstacle.x,
-                    top: obstacle.y,
-                    width: obstacle.width,
-                    height: obstacle.height,
-                    backgroundImage: themeImages.obstacle ? `url(${themeImages.obstacle})` : 'none',
-                    backgroundColor: themeImages.obstacle ? 'transparent' : '#654321',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    border: '2px solid #8B4513',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                  }}
-                />
-              ))}
-
-              {/* 角色 */}
-              <motion.div
-                className="absolute w-12 h-12 sm:w-16 sm:h-16 z-10"
+            {Math.round(loadingProgress)}% 完成
+          </Text>
+        </div>
+        {/* 游戏Canvas内容 */}
+        <div className="w-full h-full relative overflow-hidden" style={{
+          backgroundImage: themeImages.background ? `url(${themeImages.background})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}>
+          <div className="relative w-full h-full">
+            {/* 地面瓦片 */}
+            {groundTiles.map(tile => (
+              <div
+                key={tile.id}
+                className="absolute"
                 style={{
-                  left: playerPosition.x,
-                  top: playerPosition.y,
+                  left: tile.x,
+                  top: tile.y,
+                  width: tile.width,
+                  height: tile.height,
+                  backgroundImage: themeImages.ground ? `url(${themeImages.ground})` : 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,.1) 2px, rgba(255,255,255,.1) 4px)',
+                  backgroundColor: themeImages.ground ? 'transparent' : '#8B4513',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'top left',
+                  backgroundRepeat: 'repeat',
+                  border: '1px solid #654321'
                 }}
-                animate={{
-                  scaleX: character.facingDirection,
+              />
+            ))}
+
+            {/* 障碍物 */}
+            {obstacles.map(obstacle => (
+              <div
+                key={obstacle.id}
+                className="absolute rounded"
+                style={{
+                  left: obstacle.x,
+                  top: obstacle.y,
+                  width: obstacle.width,
+                  height: obstacle.height,
+                  backgroundImage: themeImages.obstacle ? `url(${themeImages.obstacle})` : 'none',
+                  backgroundColor: themeImages.obstacle ? 'transparent' : '#654321',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  border: '2px solid #8B4513',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                 }}
-                transition={{ duration: 0.1 }}
+              />
+            ))}
+
+            {/* 角色 */}
+            <motion.div
+              className="absolute w-12 h-12 sm:w-16 sm:h-16 z-10"
+              style={{
+                left: playerPosition.x,
+                top: playerPosition.y,
+              }}
+              animate={{
+                scaleX: character.facingDirection,
+              }}
+              transition={{ duration: 0.1 }}
+            >
+              <div
+                className="w-full h-full bg-cover bg-center bg-no-repeat pixelated"
+                style={{
+                  backgroundImage: themeImages.character ? `url(${themeImages.character})` : 'none',
+                  backgroundColor: themeImages.character ? 'transparent' : '#4a5568',
+                  borderRadius: themeImages.character ? '0' : '50%'
+                }}
               >
-                <div
-                  className="w-full h-full bg-cover bg-center bg-no-repeat pixelated"
-                  style={{
-                    backgroundImage: themeImages.character ? `url(${themeImages.character})` : 'none',
-                    backgroundColor: themeImages.character ? 'transparent' : '#4a5568',
-                    borderRadius: themeImages.character ? '0' : '50%'
-                  }}
-                >
-                  {!themeImages.character && (
-                    <div className="w-full h-full flex items-center justify-center text-white text-2xl">
-                      🎮
-                    </div>
+                {!themeImages.character && (
+                  <div className="w-full h-full flex items-center justify-center text-white text-2xl">
+                    🎮
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* 地面指示线（开发用） */}
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-white/20" style={{ bottom: '125px' }} />
+
+            {/* 游戏UI */}
+            {/* 左侧控制面板 */}
+            <div className="absolute top-0 left-0 p-2 z-20">
+              <div className="bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg p-2 text-white font-mono text-xs">
+                <div className="space-y-2">
+                  <button
+                    onClick={handleBackToMenu}
+                    className="w-full px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-xs transition-all duration-200"
+                  >
+                    Back to Menu
+                  </button>
+                  <button
+                    onClick={togglePause}
+                    className="w-full px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-xs transition-all duration-200"
+                  >
+                    {isPaused ? 'Resume' : 'Pause'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 右侧信息面板 */}
+            <div className="absolute top-0 right-0 p-2 z-20">
+              <div className="bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg p-2 text-white font-mono text-xs">
+                <div className="space-y-1">
+                  <p>Pos: ({Math.round(playerPosition.x)}, {Math.round(playerPosition.y)})</p>
+                  <p>Action: {currentAction}</p>
+                  <p>Status: {isPaused ? 'Paused' : 'Playing'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 底部控制提示 */}
+            <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-4 text-white font-mono text-xs sm:text-sm text-center"
+              >
+                <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-6">
+                  <span>A/D / Left/Right: Move</span>
+                  <span>Space: Jump</span>
+                  <span>ESC: Pause</span>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* 暂停/游戏结束遮罩 */}
+            {(isPaused || isGameOver) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 bg-black/50 flex items-center justify-center z-30 cursor-pointer"
+                onClick={isGameOver ? handleBackToMenu : togglePause}
+              >
+                <div className="text-center">
+                  <h2 className="text-4xl font-bold text-white font-mono mb-4">
+                    {isGameOver ? 'Game Over!' : 'Game Paused'}
+                  </h2>
+                  <p className="text-gray-300 font-mono mb-2">
+                    {isGameOver
+                      ? currentAction.replace('Game Over - ', '')
+                      : 'Press ESC or click anywhere to continue'}
+                  </p>
+                  {isGameOver && (
+                    <p className="text-yellow-300 font-mono text-sm">
+                      🌟 Your adventurous spirit is commendable!
+                    </p>
+                  )}
+                  {isGameOver && (
+                    <button
+                      onClick={handleBackToMenu}
+                      className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500/30 to-purple-500/30 hover:from-blue-500/40 hover:to-purple-500/40 border border-white/40 rounded-lg text-white font-mono transition-all duration-200 transform hover:scale-105"
+                    >
+                      🏠 Back to Menu
+                    </button>
                   )}
                 </div>
               </motion.div>
+            )}
 
-              {/* 地面指示线（开发用） */}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-white/20" style={{ bottom: '125px' }} />
-
-              {/* 游戏UI */}
-              {/* 左侧控制面板 */}
-              <div className="absolute top-0 left-0 p-2 z-20">
-                <div className="bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg p-2 text-white font-mono text-xs">
-                  <div className="space-y-2">
-                    <button
-                      onClick={handleBackToMenu}
-                      className="w-full px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-xs transition-all duration-200"
-                    >
-                      Back to Menu
-                    </button>
-                    <button
-                      onClick={togglePause}
-                      className="w-full px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-xs transition-all duration-200"
-                    >
-                      {isPaused ? 'Resume' : 'Pause'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* 右侧信息面板 */}
-              <div className="absolute top-0 right-0 p-2 z-20">
-                <div className="bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg p-2 text-white font-mono text-xs">
-                  <div className="space-y-1">
-                    <p>Pos: ({Math.round(playerPosition.x)}, {Math.round(playerPosition.y)})</p>
-                    <p>Action: {currentAction}</p>
-                    <p>Status: {isPaused ? 'Paused' : 'Playing'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 底部控制提示 */}
-              <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-4 text-white font-mono text-xs sm:text-sm text-center"
-                >
-                  <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-6">
-                    <span>A/D / Left/Right: Move</span>
-                    <span>Space: Jump</span>
-                    <span>ESC: Pause</span>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* 暂停/游戏结束遮罩 */}
-              {(isPaused || isGameOver) && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 bg-black/50 flex items-center justify-center z-30 cursor-pointer"
-                  onClick={isGameOver ? handleBackToMenu : togglePause}
-                >
-                  <div className="text-center">
-                    <h2 className="text-4xl font-bold text-white font-mono mb-4">
-                      {isGameOver ? 'Game Over!' : 'Game Paused'}
-                    </h2>
-                    <p className="text-gray-300 font-mono mb-2">
-                      {isGameOver
-                        ? currentAction.replace('Game Over - ', '')
-                        : 'Press ESC or click anywhere to continue'}
-                    </p>
-                    {isGameOver && (
-                      <p className="text-yellow-300 font-mono text-sm">
-                        🌟 Your adventurous spirit is commendable!
-                      </p>
-                    )}
-                    {isGameOver && (
-                      <button
-                        onClick={handleBackToMenu}
-                        className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500/30 to-purple-500/30 hover:from-blue-500/40 hover:to-purple-500/40 border border-white/40 rounded-lg text-white font-mono transition-all duration-200 transform hover:scale-105"
-                      >
-                        🏠 Back to Menu
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-            </div>
           </div>
-        )}
+        </div>
       </div>
     </Card>
   )
