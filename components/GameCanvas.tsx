@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, Progress, Typography } from 'antd'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/lib/store'
 import { GameCanvasProps } from '@/types'
@@ -16,6 +16,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   onBackToMenu
 }) => {
   const [isMobile, setIsMobile] = useState(false)
+  const gameCanvasRef = useRef<HTMLDivElement>(null)
 
   // Canvas组件的状态和逻辑
   const {
@@ -35,6 +36,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   } = useGameStore()
 
   const [isPaused, setIsPaused] = useState(false)
+  const [isGameOver, setIsGameOver] = useState(false)
   const [currentAction, setCurrentAction] = useState('Idle')
   const [keys, setKeys] = useState<Set<string>>(new Set())
 
@@ -143,15 +145,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 键盘控制
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // ESC键处理暂停/恢复
-    if (e.key === 'Escape') {
+    // ESC键处理暂停/恢复 - 只在非游戏结束状态下生效
+    if (e.key === 'Escape' && !isGameOver) {
       setIsPaused(!isPaused)
       return
     }
 
-    if (isPaused) return
+    if (isPaused || isGameOver) return
     setKeys(prev => new Set(prev).add(e.key.toLowerCase()))
-  }, [isPaused])
+  }, [isPaused, isGameOver])
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     setKeys(prev => {
@@ -243,20 +245,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           }
           if (keys.has('d') || keys.has('arrowright')) {
             const testX = newX + 5
+            // 动态获取游戏画布的实际宽度和位置
+            let gameEndBoundary = 900 // 默认值作为后备
+            if (gameCanvasRef.current) {
+              const rect = gameCanvasRef.current.getBoundingClientRect()
+              const actualCanvasWidth = rect.width
+              gameEndBoundary = actualCanvasWidth - playerWidth - 50 // 增加安全边距，确保能触发游戏结束
+            }
             // 检查是否到达边界
-            if (testX >= 952) {
+            if (testX >= gameEndBoundary) {
               // 触发游戏结束 - 随机选择有趣的提示文案
               const gameOverMessages = [
-                '🎯 恭喜探索者！你已到达世界的边缘！',
-                '🚀 太棒了！你成功穿越了整个关卡！',
-                '⭐ 任务完成！你是真正的跳跃大师！',
-                '🏆 出色！你征服了这片像素世界！',
-                '🎮 厉害！准备迎接下一个挑战吧！'
+                '🎯 Congratulations explorer! You have reached the edge of the world!',
+                '🚀 Amazing! You successfully traversed the entire level!',
+                '⭐ Mission complete! You are a true jumping master!',
+                '🏆 Outstanding! You conquered this pixel world!',
+                '🎮 Awesome! Ready for the next challenge!'
               ]
               const randomMessage = gameOverMessages[Math.floor(Math.random() * gameOverMessages.length)]
               // 确保状态同步更新
               setCurrentAction(`Game Over - ${randomMessage}`)
-              setTimeout(() => setIsPaused(true), 0) // 使用setTimeout确保currentAction先更新
+              setTimeout(() => setIsGameOver(true), 0) // 使用setTimeout确保currentAction先更新
             } else if (!checkCollision(testX, newY, playerWidth, playerHeight)) {
               newX = testX
               newFacingDirection = 1 // 面向右
@@ -376,6 +385,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const handleBackToMenu = () => {
     resetGame()
+    setIsGameOver(false) // 重置游戏结束状态
+    setIsPaused(false) // 重置暂停状态
     setGameState('menu')
     if (onBackToMenu) {
       onBackToMenu()
@@ -385,6 +396,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const togglePause = () => {
     setIsPaused(!isPaused)
   }
+
+  // 获取当前游戏边界值的函数
+  const getCurrentGameBoundary = useCallback(() => {
+    if (gameCanvasRef.current) {
+      const rect = gameCanvasRef.current.getBoundingClientRect()
+      const actualCanvasWidth = rect.width
+      return actualCanvasWidth - 48 - 50 // 增加安全边距，确保角色能触发游戏结束
+    }
+    return 900 // 调整默认值
+  }, [])
 
   // 获取当前主题的预览图片
   const getThemeImages = () => {
@@ -443,19 +464,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
 
       {/* 游戏内容区域 */}
-      <div style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        backgroundColor: '#ffffff',
-        border: '1px solid #e9ecef',
-        minHeight: isMobile ? '300px' : '400px',
-        position: 'relative'
-      }}>
+      <div
+        ref={gameCanvasRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e9ecef',
+          minHeight: isMobile ? '300px' : '400px',
+          position: 'relative'
+        }}>
         {isGenerating ? (
           <div style={{
             display: 'flex',
@@ -624,34 +647,34 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                 </motion.div>
               </div>
 
-              {/* 暂停遮罩 */}
-              {isPaused && (
+              {/* 暂停/游戏结束遮罩 */}
+              {(isPaused || isGameOver) && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="absolute inset-0 bg-black/50 flex items-center justify-center z-30 cursor-pointer"
-                  onClick={currentAction.includes('Game Over') ? handleBackToMenu : togglePause}
+                  onClick={isGameOver ? handleBackToMenu : togglePause}
                 >
                   <div className="text-center">
                     <h2 className="text-4xl font-bold text-white font-mono mb-4">
-                      {currentAction.includes('Game Over') ? 'Game Over!' : 'Game Paused'}
+                      {isGameOver ? 'Game Over!' : 'Game Paused'}
                     </h2>
                     <p className="text-gray-300 font-mono mb-2">
-                      {currentAction.includes('Game Over')
+                      {isGameOver
                         ? currentAction.replace('Game Over - ', '')
-                        : '按 ESC 键或点击任意位置继续游戏'}
+                        : 'Press ESC or click anywhere to continue'}
                     </p>
-                    {currentAction.includes('Game Over') && (
+                    {isGameOver && (
                       <p className="text-yellow-300 font-mono text-sm">
-                        🌟 你的冒险精神值得称赞！
+                        🌟 Your adventurous spirit is commendable!
                       </p>
                     )}
-                    {currentAction.includes('Game Over') && (
+                    {isGameOver && (
                       <button
                         onClick={handleBackToMenu}
                         className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500/30 to-purple-500/30 hover:from-blue-500/40 hover:to-purple-500/40 border border-white/40 rounded-lg text-white font-mono transition-all duration-200 transform hover:scale-105"
                       >
-                        🏠 返回主菜单
+                        🏠 Back to Menu
                       </button>
                     )}
                   </div>
