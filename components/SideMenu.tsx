@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { message } from 'antd'
 import { useGameStore, GameTheme } from '@/lib/store'
 import {
@@ -15,6 +15,11 @@ export interface SideMenuProps {
   onStartGame?: () => void
   onCreateTheme?: () => void
   onThemeUpdate?: (themes: any[]) => void
+  generateImages?: (requestBody: {
+    theme: string;
+    prompt: string;
+    types: readonly ('character' | 'background' | 'ground' | 'obstacle')[];
+  }) => Promise<any>
   themesListRef?: React.RefObject<HTMLDivElement | null>
   className?: string
   style?: React.CSSProperties
@@ -24,6 +29,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   onStartGame,
   onCreateTheme,
   onThemeUpdate,
+  generateImages,
   themesListRef,
   className,
   style
@@ -34,9 +40,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
     setSelectedTheme,
     setCustomPrompt,
     setGameState,
-    loadingProgress,
     loadingMessage,
-    setLoadingProgress,
     setLoadingMessage,
     gameData,
     setGameData,
@@ -56,6 +60,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const [presetThemes, setPresetThemes] = useState(PRESET_THEMES)
 
   // Event handlers
+
   const handleCreateTheme = async () => {
     // Check if user is trying to create a custom theme (either field has input)
     const hasCustomThemeName = customThemeName.trim() !== ''
@@ -89,7 +94,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
     
     try {
       setLoading(true)
-      setLoadingProgress(0)
       setLoadingMessage('Generating your pixel world...')
       setGameState('loading')
       
@@ -103,34 +107,13 @@ const SideMenu: React.FC<SideMenuProps> = ({
         types: ['character', 'background', 'ground', 'obstacle'] as const
       }
 
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
-        if (response.status === 429 || (errorData && errorData.error && errorData.error.includes('rate limit'))) {
-          throw new Error('API请求频率过高，请稍后再试')
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-
-      if (!result.success) {
-        if (result.error && result.error.includes('rate limit')) {
-          throw new Error('API请求频率过高，请稍后再试')
-        }
-        throw new Error(result.error || '图像生成失败')
+      const result = generateImages ? await generateImages(requestBody) : null
+      if (!result) {
+        throw new Error('图像生成函数未提供')
       }
 
       if (result.success && result.data) {
         setGameData(result)
-        setLoadingProgress(100)
         setLoadingMessage('Generation complete!')
 
         const finalThemeId = `custom-${Date.now()}` as GameTheme

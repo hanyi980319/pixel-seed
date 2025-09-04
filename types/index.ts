@@ -52,7 +52,7 @@ export interface ThemeCustomizerProps {
 export interface ActionButtonsProps {
   isThemeCreated: boolean
   isLoading: boolean
-  selectedTheme: string | null
+  selectedTheme: string
   customPrompt: string
   customThemeName: string
   apiKey: string
@@ -74,6 +74,7 @@ export interface ThemePreviewProps {
   gameData?: GameData
   selectedTheme: GameTheme
   themes: Theme[]
+  onRegenerateImage?: (themeId: string, imageType: 'character' | 'background' | 'ground' | 'obstacle') => void
 }
 
 // 进度指示器组件Props

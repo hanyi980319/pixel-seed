@@ -473,47 +473,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           minHeight: isMobile ? '300px' : '400px',
           position: 'relative'
         }}>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '20px',
-            padding: '40px'
-          }}
-        >
-          <div style={{
-            fontSize: isMobile ? '48px' : '64px',
-            marginBottom: '20px'
-          }}>🎮</div>
-
-          <Text style={{
-            fontSize: isMobile ? '16px' : '18px',
-            color: '#666',
-            textAlign: 'center',
-            marginBottom: '16px'
-          }}>
-            {loadingMessage}
-          </Text>
-
-          <Progress
-            percent={loadingProgress}
-            strokeColor={{
-              '0%': '#108ee9',
-              '100%': '#87d068',
-            }}
-            style={{ width: isMobile ? '200px' : '300px' }}
-          />
-
-          <Text style={{
-            fontSize: '14px',
-            color: '#999',
-            marginTop: '8px'
-          }}>
-            {Math.round(loadingProgress)}% 完成
-          </Text>
-        </div>
         {/* 游戏Canvas内容 */}
         <div className="w-full h-full relative overflow-hidden" style={{
           backgroundImage: themeImages.background ? `url(${themeImages.background})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
