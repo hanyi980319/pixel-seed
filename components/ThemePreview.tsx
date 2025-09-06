@@ -23,11 +23,26 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
     ground: boolean;
     obstacle: boolean;
   }>({ character: false, background: false, ground: false, obstacle: false })
+  
+  // 存储处理后的图像URL
+  const [processedImages, setProcessedImages] = useState<{
+    character?: string;
+    background?: string;
+    ground?: string;
+    obstacle?: string;
+  }>({})
   const getPreviewImages = () => {
+    let baseImages: any = {
+      character: null,
+      background: null,
+      ground: null,
+      obstacle: null
+    }
+    
     if (selectedTheme && selectedTheme !== 'custom') {
       const theme = themes.find(t => t.id === selectedTheme)
       if (theme) {
-        return {
+        baseImages = {
           character: { url: theme.characterImage },
           background: { url: theme.backgroundImage },
           ground: { url: theme.groundImage },
@@ -36,19 +51,21 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       }
     }
     // 适配新的数据结构
-    if (gameData?.data) {
-      return {
+    else if (gameData?.data) {
+      baseImages = {
         character: { url: gameData.data.characterUrl },
         background: { url: gameData.data.backgroundUrl },
         ground: { url: gameData.data.groundUrl },
         obstacle: { url: gameData.data.obstacleUrl }
       }
     }
+    
+    // 使用处理后的图像URL覆盖原始URL
     return {
-      character: null,
-      background: null,
-      ground: null,
-      obstacle: null
+      character: processedImages.character ? { url: processedImages.character } : baseImages.character,
+      background: processedImages.background ? { url: processedImages.background } : baseImages.background,
+      ground: processedImages.ground ? { url: processedImages.ground } : baseImages.ground,
+      obstacle: processedImages.obstacle ? { url: processedImages.obstacle } : baseImages.obstacle
     }
   }
 
@@ -79,17 +96,12 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       const result = await response.json()
       
       if (result.success) {
-        // 更新图像URL - 这里需要根据实际的状态管理方式来更新
-        // 由于当前组件没有直接更新图像的方法，我们显示成功消息
+        // 直接将处理后的图像应用于当前角色形象
+        setProcessedImages(prev => ({
+          ...prev,
+          [imageType]: result.data.processedUrl
+        }))
         message.success(`${imageType} image processed successfully!`)
-        
-        // 创建下载链接让用户下载处理后的图像
-        const link = document.createElement('a')
-        link.href = result.data.processedUrl
-        link.download = `processed-${imageType}.png`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
       } else {
         message.error(`Failed to process ${imageType} image: ${result.error}`)
       }
@@ -154,7 +166,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
               <div style={{ marginBottom: '8px' }}>
                 <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Character</Text>
               </div>
-              {regeneratingImages.character ? (
+              {(regeneratingImages.character || processingImages.character) ? (
                 <div
                   className="skeleton-image-full"
                   style={{
@@ -204,14 +216,13 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 )
               )}
-              {!regeneratingImages.character && getPreviewImages()?.character?.url && (
+              {!regeneratingImages.character && !processingImages.character && getPreviewImages()?.character?.url && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
                   <Button
                     size="small"
                     icon={<Scissors size={12} />}
                     onClick={() => handleProcessImage('character')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
-                    loading={processingImages.character}
                     title="Remove background"
                   >
                     Cutout
@@ -236,7 +247,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
               <div style={{ marginBottom: '8px' }}>
                 <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Level Background</Text>
               </div>
-              {regeneratingImages.background ? (
+              {(regeneratingImages.background || processingImages.background) ? (
                 <div
                   className="skeleton-image-full"
                   style={{
@@ -286,17 +297,28 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 )
               )}
-              {!regeneratingImages.background && getPreviewImages()?.background?.url && onRegenerateImage && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              {!regeneratingImages.background && !processingImages.background && getPreviewImages()?.background?.url && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
                   <Button
                     size="small"
-                    icon={<RotateCcw size={12} />}
-                    onClick={() => onRegenerateImage(selectedTheme, 'background')}
+                    icon={<Scissors size={12} />}
+                    onClick={() => handleProcessImage('background')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
-                    loading={regeneratingImages.background}
+                    title="Remove background"
                   >
-                    Regenerate
+                    Cutout
                   </Button>
+                  {onRegenerateImage && (
+                    <Button
+                      size="small"
+                      icon={<RotateCcw size={12} />}
+                      onClick={() => onRegenerateImage(selectedTheme, 'background')}
+                      style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
+                      loading={regeneratingImages.background}
+                    >
+                      Regenerate
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -309,7 +331,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
               <div style={{ marginBottom: '8px' }}>
                 <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Ground Texture</Text>
               </div>
-              {regeneratingImages.ground ? (
+              {(regeneratingImages.ground || processingImages.ground) ? (
                 <div
                   className="skeleton-image-full"
                   style={{
@@ -359,17 +381,28 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 )
               )}
-              {!regeneratingImages.ground && getPreviewImages()?.ground?.url && onRegenerateImage && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              {!regeneratingImages.ground && !processingImages.ground && getPreviewImages()?.ground?.url && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
                   <Button
                     size="small"
-                    icon={<RotateCcw size={12} />}
-                    onClick={() => onRegenerateImage(selectedTheme, 'ground')}
+                    icon={<Scissors size={12} />}
+                    onClick={() => handleProcessImage('ground')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
-                    loading={regeneratingImages.ground}
+                    title="Remove background"
                   >
-                    Regenerate
+                    Cutout
                   </Button>
+                  {onRegenerateImage && (
+                    <Button
+                      size="small"
+                      icon={<RotateCcw size={12} />}
+                      onClick={() => onRegenerateImage(selectedTheme, 'ground')}
+                      style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
+                      loading={regeneratingImages.ground}
+                    >
+                      Regenerate
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -379,7 +412,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
               <div style={{ marginBottom: '8px' }}>
                 <Text style={{ fontSize: '14px', fontWeight: 'bold' }}>Obstacle</Text>
               </div>
-              {regeneratingImages.obstacle ? (
+              {(regeneratingImages.obstacle || processingImages.obstacle) ? (
                 <div
                   className="skeleton-image-full"
                   style={{
@@ -429,17 +462,28 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 )
               )}
-              {!regeneratingImages.obstacle && getPreviewImages()?.obstacle?.url && onRegenerateImage && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              {!regeneratingImages.obstacle && !processingImages.obstacle && getPreviewImages()?.obstacle?.url && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
                   <Button
                     size="small"
-                    icon={<RotateCcw size={12} />}
-                    onClick={() => onRegenerateImage(selectedTheme, 'obstacle')}
+                    icon={<Scissors size={12} />}
+                    onClick={() => handleProcessImage('obstacle')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
-                    loading={regeneratingImages.obstacle}
+                    title="Remove background"
                   >
-                    Regenerate
+                    Cutout
                   </Button>
+                  {onRegenerateImage && (
+                    <Button
+                      size="small"
+                      icon={<RotateCcw size={12} />}
+                      onClick={() => onRegenerateImage(selectedTheme, 'obstacle')}
+                      style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
+                      loading={regeneratingImages.obstacle}
+                    >
+                      Regenerate
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
