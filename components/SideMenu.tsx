@@ -210,6 +210,10 @@ const SideMenu: React.FC<SideMenuProps> = ({
   }
 
   const handleStartGame = () => {
+    // 确保在游戏开始前同步当前选中的主题到localStorage
+    const { saveToLocalStorage } = useGameStore.getState()
+    saveToLocalStorage()
+    
     // Call external callback if provided
     onStartGame?.()
   }

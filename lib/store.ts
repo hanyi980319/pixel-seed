@@ -131,7 +131,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   
   // 状态更新函数
   setGameState: (state) => set({ gameState: state }),
-  setSelectedTheme: (theme) => set({ selectedTheme: theme }),
+  setSelectedTheme: (theme) => {
+    set({ selectedTheme: theme })
+    get().saveToLocalStorage()
+  },
   setCustomPrompt: (prompt) => set({ customPrompt: prompt }),
   setCharacterType: (type) => set({ characterType: type }),
   setLevelType: (type) => set({ levelType: type }),
