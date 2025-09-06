@@ -1,7 +1,8 @@
 'use client'
 
-import { Card, Typography, Empty, Image, Button, Skeleton, message } from 'antd'
+import { Card, Typography, Empty, Image, Button, Skeleton, message, Space } from 'antd'
 import { RotateCcw, Trash2, Scissors } from 'lucide-react'
+import { DownloadOutlined, RotateLeftOutlined, RotateRightOutlined, SwapOutlined, UndoOutlined, ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons'
 import { ThemePreviewProps } from '@/types'
 import { useState, useEffect } from 'react'
 import { useGameStore } from '@/lib/store'
@@ -24,10 +25,10 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
     ground: boolean;
     obstacle: boolean;
   }>({ character: false, background: false, ground: false, obstacle: false })
-  
+
   // 使用全局状态管理抠图结果
   const { getProcessedImagesForTheme, updateProcessedImage, loadFromLocalStorage } = useGameStore()
-  
+
   // 组件加载时从localStorage恢复数据
   useEffect(() => {
     loadFromLocalStorage()
@@ -39,10 +40,10 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       ground: null,
       obstacle: null
     }
-    
+
     // 获取当前主题ID
     const currentThemeId = selectedTheme === 'custom' ? 'custom' : selectedTheme || 'fantasy'
-    
+
     if (selectedTheme && selectedTheme !== 'custom') {
       const theme = themes.find(t => t.id === selectedTheme)
       if (theme) {
@@ -63,10 +64,10 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
         obstacle: { url: gameData.data.obstacleUrl }
       }
     }
-    
+
     // 获取当前主题的处理后图像
     const themeProcessedImages = getProcessedImagesForTheme(currentThemeId)
-    
+
     // 使用处理后的图像URL覆盖原始URL
     return {
       character: themeProcessedImages.character ? { url: themeProcessedImages.character } : baseImages.character,
@@ -76,18 +77,96 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
     }
   }
 
+  // 处理图像下载
+  const handleDownloadImage = (imageUrl: string, imageType: string) => {
+    if (!imageUrl) {
+      message.error('No image to download')
+      return
+    }
+
+    const suffix = imageUrl.slice(imageUrl.lastIndexOf('.')) || '.png'
+    const filename = `${imageType}-${Date.now()}${suffix}`
+
+    fetch(imageUrl)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(new Blob([blob]))
+        const link = document.createElement('a')
+        link.href = blobUrl
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        URL.revokeObjectURL(blobUrl)
+        link.remove()
+        message.success(`${imageType} image downloaded successfully!`)
+      })
+      .catch((error) => {
+        console.error('Error downloading image:', error)
+        message.error(`Error downloading ${imageType} image`)
+      })
+  }
+
+  // 自定义工具栏渲染函数
+  const renderToolbar = (imageUrl: string, imageType: string) => {
+    return (
+      _: any,
+      {
+        transform: { scale },
+        actions: {
+          onFlipY,
+          onFlipX,
+          onRotateLeft,
+          onRotateRight,
+          onZoomOut,
+          onZoomIn,
+          onReset,
+        },
+      }: any
+    ) => (
+      <div className="toolbar-wrapper">
+          <DownloadOutlined 
+            onClick={() => handleDownloadImage(imageUrl, imageType)} 
+          />
+          <SwapOutlined 
+            rotate={90} 
+            onClick={onFlipY} 
+          />
+          <SwapOutlined 
+            onClick={onFlipX} 
+          />
+          <RotateLeftOutlined 
+            onClick={onRotateLeft} 
+          />
+          <RotateRightOutlined 
+            onClick={onRotateRight} 
+          />
+          <ZoomOutOutlined 
+            disabled={scale === 1} 
+            onClick={onZoomOut} 
+          />
+          <ZoomInOutlined 
+            disabled={scale === 50} 
+            onClick={onZoomIn} 
+          />
+          <UndoOutlined 
+            onClick={onReset} 
+          />
+        </div>
+    )
+  }
+
   // 处理手动抠图
   const handleProcessImage = async (imageType: 'character' | 'background' | 'ground' | 'obstacle') => {
     const images = getPreviewImages()
     const imageUrl = images?.[imageType]?.url
-    
+
     if (!imageUrl) {
       message.error('No image to process')
       return
     }
 
     setProcessingImages(prev => ({ ...prev, [imageType]: true }))
-    
+
     try {
       const response = await fetch('/api/process-image', {
         method: 'POST',
@@ -101,7 +180,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         // 获取当前主题ID并保存抠图结果
         const currentThemeId = selectedTheme === 'custom' ? 'custom' : selectedTheme || 'fantasy'
@@ -200,6 +279,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                       borderRadius: '8px',
                       objectFit: 'cover'
                     }}
+                    preview={{
+                      toolbarRender: renderToolbar(getPreviewImages()?.character?.url || '', 'character')
+                    }}
                   />
                 ) : (
                   <div
@@ -281,6 +363,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                       borderRadius: '8px',
                       objectFit: 'cover'
                     }}
+                    preview={{
+                      toolbarRender: renderToolbar(getPreviewImages()?.background?.url || '', 'background')
+                    }}
                   />
                 ) : (
                   <div
@@ -355,6 +440,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                       aspectRatio: '1',
                       borderRadius: '8px',
                       objectFit: 'cover'
+                    }}
+                    preview={{
+                      toolbarRender: renderToolbar(getPreviewImages()?.ground?.url || '', 'ground')
                     }}
                   />
                 ) : (
@@ -436,6 +524,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                       aspectRatio: '1',
                       borderRadius: '8px',
                       objectFit: 'cover'
+                    }}
+                    preview={{
+                      toolbarRender: renderToolbar(getPreviewImages()?.obstacle?.url || '', 'obstacle')
                     }}
                   />
                 ) : (
