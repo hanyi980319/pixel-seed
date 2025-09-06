@@ -140,7 +140,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setLevelType: (type) => set({ levelType: type }),
   setCurrentAction: (action) => set({ currentAction: action }),
   setGameData: (data) => {
-    set({ gameData: data })
+    const state = get()
+    const currentThemeId = state.selectedTheme === 'custom' ? 'custom' : state.selectedTheme || 'fantasy'
+    
+    // 智能缓存清理：当有新的游戏数据时，清除当前主题下对应类型的processedImages缓存
+    // 这样可以确保新生成的图像不会被旧的抠图结果覆盖
+    if (data?.data) {
+      const updatedProcessedImages = { ...state.processedImages }
+      
+      // 如果当前主题存在processedImages，则清除对应类型的缓存
+      if (updatedProcessedImages[currentThemeId]) {
+        const themeImages = { ...updatedProcessedImages[currentThemeId] }
+        
+        // 清除有新数据的图像类型的缓存
+        if (data.data.characterUrl) delete themeImages.character
+        if (data.data.backgroundUrl) delete themeImages.background
+        if (data.data.groundUrl) delete themeImages.ground
+        if (data.data.obstacleUrl) delete themeImages.obstacle
+        
+        updatedProcessedImages[currentThemeId] = themeImages
+      }
+      
+      set({ gameData: data, processedImages: updatedProcessedImages })
+    } else {
+      set({ gameData: data })
+    }
+    
     get().saveToLocalStorage()
   },
   setProcessedImages: (images) => {

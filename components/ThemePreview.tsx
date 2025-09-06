@@ -55,7 +55,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
         }
       }
     }
-    // 适配新的数据结构
+    // 适配新的数据结构 - 优先使用最新生成的图像
     else if (gameData?.data) {
       baseImages = {
         character: { url: gameData.data.characterUrl },
@@ -65,10 +65,13 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       }
     }
 
-    // 获取当前主题的处理后图像
+    // 获取当前主题的处理后图像（抠图结果）
     const themeProcessedImages = getProcessedImagesForTheme(currentThemeId)
 
-    // 使用处理后的图像URL覆盖原始URL
+    // 智能图像显示逻辑：
+    // 1. 如果有抠图结果，优先显示抠图结果
+    // 2. 否则显示原始图像（新生成的或预设主题的）
+    // 这样既能确保新生成的图像立即显示，又能正确展示抠图结果
     return {
       character: themeProcessedImages.character ? { url: themeProcessedImages.character } : baseImages.character,
       background: themeProcessedImages.background ? { url: themeProcessedImages.background } : baseImages.background,
