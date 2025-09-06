@@ -35,6 +35,34 @@ function getSizeForType(type: 'character' | 'background' | 'ground' | 'obstacle'
   }
 }
 
+// 调用图像抠图处理API
+async function processImageCutout(imageUrl: string, type: 'character' | 'background' | 'ground' | 'obstacle'): Promise<string> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/process-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        imageUrl,
+        type
+      })
+    })
+
+    const result = await response.json()
+    
+    if (result.success) {
+      return result.data.processedUrl
+    } else {
+      console.warn(`Image processing failed for ${type}, using original image:`, result.error)
+      return imageUrl // 如果处理失败，返回原图
+    }
+  } catch (error) {
+    console.warn(`Error processing ${type} image, using original:`, error)
+    return imageUrl // 如果出错，返回原图
+  }
+}
+
 // 调用DashScope API
 async function callDashScopeAPI(
   prompt: string, 
@@ -164,8 +192,16 @@ export async function POST(request: NextRequest) {
         await new Promise(resolve => setTimeout(resolve, delay))
       }
       
-      const url = await callDashScopeAPI(prompts[type], type, getSizeForType(type))
-      data[`${type}Url`] = url
+      const originalUrl = await callDashScopeAPI(prompts[type], type, getSizeForType(type))
+      
+      // 对角色图像自动进行抠图处理
+      let finalUrl = originalUrl
+      if (type === 'character') {
+        console.log(`[${new Date().toISOString()}] Auto-processing character image for background removal`)
+        finalUrl = await processImageCutout(originalUrl, type)
+      }
+      
+      data[`${type}Url`] = finalUrl
     }
 
     // 返回生成结果

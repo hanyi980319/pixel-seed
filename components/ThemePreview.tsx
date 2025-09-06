@@ -1,8 +1,9 @@
 'use client'
 
-import { Card, Typography, Empty, Image, Button, Skeleton } from 'antd'
-import { RotateCcw, Trash2 } from 'lucide-react'
+import { Card, Typography, Empty, Image, Button, Skeleton, message } from 'antd'
+import { RotateCcw, Trash2, Scissors } from 'lucide-react'
 import { ThemePreviewProps } from '@/types'
+import { useState } from 'react'
 
 const { Text } = Typography
 
@@ -16,6 +17,12 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
   onRegenerateImage,
   onDeleteTheme
 }) => {
+  const [processingImages, setProcessingImages] = useState<{
+    character: boolean;
+    background: boolean;
+    ground: boolean;
+    obstacle: boolean;
+  }>({ character: false, background: false, ground: false, obstacle: false })
   const getPreviewImages = () => {
     if (selectedTheme && selectedTheme !== 'custom') {
       const theme = themes.find(t => t.id === selectedTheme)
@@ -42,6 +49,55 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       background: null,
       ground: null,
       obstacle: null
+    }
+  }
+
+  // 处理手动抠图
+  const handleProcessImage = async (imageType: 'character' | 'background' | 'ground' | 'obstacle') => {
+    const images = getPreviewImages()
+    const imageUrl = images?.[imageType]?.url
+    
+    if (!imageUrl) {
+      message.error('No image to process')
+      return
+    }
+
+    setProcessingImages(prev => ({ ...prev, [imageType]: true }))
+    
+    try {
+      const response = await fetch('/api/process-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageUrl,
+          type: imageType
+        })
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        // 更新图像URL - 这里需要根据实际的状态管理方式来更新
+        // 由于当前组件没有直接更新图像的方法，我们显示成功消息
+        message.success(`${imageType} image processed successfully!`)
+        
+        // 创建下载链接让用户下载处理后的图像
+        const link = document.createElement('a')
+        link.href = result.data.processedUrl
+        link.download = `processed-${imageType}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      } else {
+        message.error(`Failed to process ${imageType} image: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error processing image:', error)
+      message.error(`Error processing ${imageType} image`)
+    } finally {
+      setProcessingImages(prev => ({ ...prev, [imageType]: false }))
     }
   }
 
@@ -148,17 +204,29 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
                   </div>
                 )
               )}
-              {!regeneratingImages.character && getPreviewImages()?.character?.url && onRegenerateImage && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              {!regeneratingImages.character && getPreviewImages()?.character?.url && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
                   <Button
                     size="small"
-                    icon={<RotateCcw size={12} />}
-                    onClick={() => onRegenerateImage(selectedTheme, 'character')}
+                    icon={<Scissors size={12} />}
+                    onClick={() => handleProcessImage('character')}
                     style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
-                    loading={regeneratingImages.character}
+                    loading={processingImages.character}
+                    title="Remove background"
                   >
-                    Regenerate
+                    Cutout
                   </Button>
+                  {onRegenerateImage && (
+                    <Button
+                      size="small"
+                      icon={<RotateCcw size={12} />}
+                      onClick={() => onRegenerateImage(selectedTheme, 'character')}
+                      style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
+                      loading={regeneratingImages.character}
+                    >
+                      Regenerate
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
