@@ -3,7 +3,8 @@
 import { Card, Typography, Empty, Image, Button, Skeleton, message } from 'antd'
 import { RotateCcw, Trash2, Scissors } from 'lucide-react'
 import { ThemePreviewProps } from '@/types'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useGameStore } from '@/lib/store'
 
 const { Text } = Typography
 
@@ -24,13 +25,13 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
     obstacle: boolean;
   }>({ character: false, background: false, ground: false, obstacle: false })
   
-  // 存储处理后的图像URL
-  const [processedImages, setProcessedImages] = useState<{
-    character?: string;
-    background?: string;
-    ground?: string;
-    obstacle?: string;
-  }>({})
+  // 使用全局状态管理抠图结果
+  const { processedImages, updateProcessedImage, loadFromLocalStorage } = useGameStore()
+  
+  // 组件加载时从localStorage恢复数据
+  useEffect(() => {
+    loadFromLocalStorage()
+  }, [loadFromLocalStorage])
   const getPreviewImages = () => {
     let baseImages: any = {
       character: null,
@@ -96,11 +97,8 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       const result = await response.json()
       
       if (result.success) {
-        // 直接将处理后的图像应用于当前角色形象
-        setProcessedImages(prev => ({
-          ...prev,
-          [imageType]: result.data.processedUrl
-        }))
+        // 直接将处理后的图像应用于当前角色形象并保存到全局状态
+        updateProcessedImage(imageType, result.data.processedUrl)
         message.success(`${imageType} image processed successfully!`)
       } else {
         message.error(`Failed to process ${imageType} image: ${result.error}`)

@@ -22,7 +22,8 @@ export default function Home() {
     isLoading,
     setLoading,
     loadingMessage,
-    setLoadingMessage
+    setLoadingMessage,
+    loadFromLocalStorage
   } = useGameStore()
 
   const [showGameInterface, setShowGameInterface] = useState(false)
@@ -57,11 +58,13 @@ export default function Home() {
     return PRESET_THEMES
   }
 
-  // 初始化时从 localStorage 读取主题数据
+  // 初始化时从 localStorage 读取主题数据和游戏数据
   useEffect(() => {
     const storedThemes = loadThemesFromStorage()
     setPresetThemes(storedThemes)
-  }, [])
+    // 加载游戏数据和抠图结果
+    loadFromLocalStorage()
+  }, [loadFromLocalStorage])
 
   // Event handlers
   const handleThemeSelect = (themeId: GameTheme) => {

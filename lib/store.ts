@@ -17,6 +17,13 @@ interface GameData {
   timestamp?: string
 }
 
+interface ProcessedImages {
+  character?: string
+  background?: string
+  ground?: string
+  obstacle?: string
+}
+
 interface Obstacle {
   id: string
   x: number
@@ -59,6 +66,11 @@ interface GameStore {
   gameData: GameData
   setGameData: (data: GameData) => void
   
+  // 抠图结果
+  processedImages: ProcessedImages
+  setProcessedImages: (images: ProcessedImages) => void
+  updateProcessedImage: (type: keyof ProcessedImages, url: string) => void
+  
   // 加载状态
   isLoading: boolean
   loadingProgress: number
@@ -87,11 +99,15 @@ interface GameStore {
   isCollisionEnabled: boolean
   setCollisionEnabled: (enabled: boolean) => void
   
+  // 持久化
+  saveToLocalStorage: () => void
+  loadFromLocalStorage: () => void
+  
   // 重置函数
   resetGame: () => void
 }
 
-export const useGameStore = create<GameStore>((set) => ({
+export const useGameStore = create<GameStore>((set, get) => ({
   // 初始状态
   gameState: 'menu',
   selectedTheme: 'fantasy',
@@ -100,6 +116,7 @@ export const useGameStore = create<GameStore>((set) => ({
   levelType: 'ground',
   currentAction: 'idle',
   gameData: {},
+  processedImages: {},
   isLoading: false,
   loadingProgress: 0,
   loadingMessage: '',
@@ -116,7 +133,20 @@ export const useGameStore = create<GameStore>((set) => ({
   setCharacterType: (type) => set({ characterType: type }),
   setLevelType: (type) => set({ levelType: type }),
   setCurrentAction: (action) => set({ currentAction: action }),
-  setGameData: (data) => set({ gameData: data }),
+  setGameData: (data) => {
+    set({ gameData: data })
+    get().saveToLocalStorage()
+  },
+  setProcessedImages: (images) => {
+    set({ processedImages: images })
+    get().saveToLocalStorage()
+  },
+  updateProcessedImage: (type, url) => {
+    set((state) => ({
+      processedImages: { ...state.processedImages, [type]: url }
+    }))
+    get().saveToLocalStorage()
+  },
   setLoading: (loading) => set({ isLoading: loading }),
   setLoadingProgress: (progress) => set({ loadingProgress: progress }),
   setLoadingMessage: (message) => set({ loadingMessage: message }),
@@ -130,22 +160,56 @@ export const useGameStore = create<GameStore>((set) => ({
   removeObstacle: (id) => set((state) => ({ obstacles: state.obstacles.filter(o => o.id !== id) })),
   setCollisionEnabled: (enabled) => set({ isCollisionEnabled: enabled }),
   
-  // 重置游戏
-  resetGame: () => set({
-    gameState: 'menu',
-    selectedTheme: 'fantasy',
-    customPrompt: '',
-    characterType: 'player',
-    levelType: 'ground',
-    currentAction: 'idle',
-    gameData: {},
-    isLoading: false,
-    loadingProgress: 0,
-    loadingMessage: '',
-    playerPosition: { x: 100, y: 400 },
-    groundTiles: [],
-    groundHeight: 350,
-    obstacles: [],
-    isCollisionEnabled: true,
-  }),
+  // 持久化方法
+  saveToLocalStorage: () => {
+    const state = get()
+    const dataToSave = {
+      gameData: state.gameData,
+      processedImages: state.processedImages,
+      selectedTheme: state.selectedTheme,
+      customPrompt: state.customPrompt
+    }
+    localStorage.setItem('pixel-seed-game-data', JSON.stringify(dataToSave))
+  },
+  
+  loadFromLocalStorage: () => {
+    try {
+      const saved = localStorage.getItem('pixel-seed-game-data')
+      if (saved) {
+        const data = JSON.parse(saved)
+        set({
+          gameData: data.gameData || {},
+          processedImages: data.processedImages || {},
+          selectedTheme: data.selectedTheme || 'fantasy',
+          customPrompt: data.customPrompt || ''
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load from localStorage:', error)
+    }
+  },
+  
+  // 重置游戏（保留抠图结果）
+  resetGame: () => {
+    const currentState = get()
+    set({
+      gameState: 'menu',
+      selectedTheme: currentState.selectedTheme, // 保留当前选择的主题
+      customPrompt: currentState.customPrompt, // 保留自定义提示
+      characterType: 'player',
+      levelType: 'ground',
+      currentAction: 'idle',
+      gameData: currentState.gameData, // 保留游戏数据
+      processedImages: currentState.processedImages, // 保留抠图结果
+      isLoading: false,
+      loadingProgress: 0,
+      loadingMessage: '',
+      playerPosition: { x: 100, y: 400 },
+      groundTiles: [],
+      groundHeight: 350,
+      obstacles: [],
+      isCollisionEnabled: true,
+    })
+    get().saveToLocalStorage()
+  },
 }))

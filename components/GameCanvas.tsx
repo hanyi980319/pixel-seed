@@ -20,6 +20,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   // Canvas组件的状态和逻辑
   const {
     gameData,
+    processedImages,
     playerPosition,
     setPlayerPosition,
     setGameState,
@@ -32,7 +33,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     setGroundHeight,
     addObstacle,
     isCollisionEnabled,
+    loadFromLocalStorage,
   } = useGameStore()
+  
+  // 组件加载时从localStorage恢复数据
+  useEffect(() => {
+    loadFromLocalStorage()
+  }, [loadFromLocalStorage])
 
   const [isPaused, setIsPaused] = useState(false)
   const [isGameOver, setIsGameOver] = useState(false)
@@ -142,6 +149,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     setPlayerPosition({ x: initialX, y: initialY })
   }, [setPlayerPosition])
 
+  // 获取实际使用的图像URL（优先使用抠图结果）
+  const getActualImageUrls = useCallback(() => {
+    const baseUrls = {
+      character: gameData?.data?.characterUrl || '',
+      background: gameData?.data?.backgroundUrl || '',
+      ground: gameData?.data?.groundUrl || '',
+      obstacle: gameData?.data?.obstacleUrl || ''
+    }
+    
+    return {
+      character: processedImages.character || baseUrls.character,
+      background: processedImages.background || baseUrls.background,
+      ground: processedImages.ground || baseUrls.ground,
+      obstacle: processedImages.obstacle || baseUrls.obstacle
+    }
+  }, [gameData, processedImages])
+  
   // 游戏初始化
   useEffect(() => {
     initializeGround()
@@ -420,26 +444,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     return 900 // 调整默认值
   }, [])
 
-  // 获取当前主题的预览图片
+  // 获取当前主题的预览图片（优先使用抠图结果）
   const getThemeImages = () => {
     if (selectedTheme && selectedTheme !== 'custom') {
       const theme = PRESET_THEMES.find(t => t.id === selectedTheme)
       if (theme) {
+        // 对于预设主题，也检查是否有抠图结果
+        const actualUrls = getActualImageUrls()
         return {
-          character: theme.characterImage,
-          background: theme.backgroundImage,
-          ground: theme.groundImage,
-          obstacle: theme.obstacleImage
+          character: actualUrls.character || theme.characterImage,
+          background: actualUrls.background || theme.backgroundImage,
+          ground: actualUrls.ground || theme.groundImage,
+          obstacle: actualUrls.obstacle || theme.obstacleImage
         }
       }
     }
-    // 如果是自定义主题或生成的内容，使用gameData
-    if (gameData?.data) {
+    // 如果是自定义主题或生成的内容，优先使用抠图结果
+    if (gameData?.data || Object.keys(processedImages).length > 0) {
+      const actualUrls = getActualImageUrls()
       return {
-        character: gameData.data.characterUrl,
-        background: gameData.data.backgroundUrl,
-        ground: gameData.data.groundUrl,
-        obstacle: gameData.data.obstacleUrl
+        character: actualUrls.character,
+        background: actualUrls.background,
+        ground: actualUrls.ground,
+        obstacle: actualUrls.obstacle
       }
     }
     return {
