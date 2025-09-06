@@ -1,13 +1,11 @@
 'use client'
 
-import { Card, Progress, Typography } from 'antd'
+import { Card } from 'antd'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useGameStore } from '@/lib/store'
 import { GameCanvasProps } from '@/types'
 import { PRESET_THEMES } from '@/configs'
-
-const { Text } = Typography
 
 const GameCanvas: React.FC<GameCanvasProps> = ({
   loadingProgress = 0,
@@ -34,6 +32,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     addObstacle,
     isCollisionEnabled,
     loadFromLocalStorage,
+    getProcessedImagesForTheme,
   } = useGameStore()
 
   // 组件加载时从localStorage恢复数据
@@ -158,13 +157,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       obstacle: gameData?.data?.obstacleUrl || ''
     }
 
+    // 获取当前主题的抠图结果
+    const currentThemeId = selectedTheme === 'custom' ? 'custom' : selectedTheme || 'fantasy'
+    const themeProcessedImages = getProcessedImagesForTheme(currentThemeId)
+
     return {
-      character: processedImages.character || baseUrls.character,
-      background: processedImages.background || baseUrls.background,
-      ground: processedImages.ground || baseUrls.ground,
-      obstacle: processedImages.obstacle || baseUrls.obstacle
+      character: themeProcessedImages.character || baseUrls.character,
+      background: themeProcessedImages.background || baseUrls.background,
+      ground: themeProcessedImages.ground || baseUrls.ground,
+      obstacle: themeProcessedImages.obstacle || baseUrls.obstacle
     }
-  }, [gameData, processedImages])
+  }, [gameData, selectedTheme, getProcessedImagesForTheme])
 
   // 游戏初始化
   useEffect(() => {
@@ -448,7 +451,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const getThemeImages = () => {
     console.log('🎨 getThemeImages - 开始获取主题图像')
     console.log('  selectedTheme:', selectedTheme)
-    
+
     if (selectedTheme && selectedTheme !== 'custom') {
       // 首先尝试从localStorage中获取更新后的主题数据
       let updatedTheme = null
@@ -462,10 +465,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       } catch (error) {
         console.error('  读取localStorage主题数据失败:', error)
       }
-      
+
       // 如果没有找到更新的主题数据，使用默认配置
       const theme = updatedTheme || PRESET_THEMES.find(t => t.id === selectedTheme)
-      
+
       if (theme) {
         // 对于预设主题，也检查是否有抠图结果
         const actualUrls = getActualImageUrls()
