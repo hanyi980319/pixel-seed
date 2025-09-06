@@ -297,15 +297,6 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
               )}
               {!regeneratingImages.background && !processingImages.background && getPreviewImages()?.background?.url && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
-                  <Button
-                    size="small"
-                    icon={<Scissors size={12} />}
-                    onClick={() => handleProcessImage('background')}
-                    style={{ padding: '4px 8px', height: '28px', fontSize: '12px' }}
-                    title="Remove background"
-                  >
-                    Cutout
-                  </Button>
                   {onRegenerateImage && (
                     <Button
                       size="small"

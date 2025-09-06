@@ -35,7 +35,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     isCollisionEnabled,
     loadFromLocalStorage,
   } = useGameStore()
-  
+
   // 组件加载时从localStorage恢复数据
   useEffect(() => {
     loadFromLocalStorage()
@@ -54,7 +54,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const rect = gameCanvasRef.current.getBoundingClientRect()
       canvasWidth = Math.max(rect.width, 1000) // 确保至少1000px宽度
     }
-    
+
     const groundY = 400 // 地面y位置，基于地面指示线(底部上方125px)
 
     // 创建一个完整的地面条带，覆盖整个画布宽度
@@ -77,7 +77,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       const rect = gameCanvasRef.current.getBoundingClientRect()
       canvasWidth = Math.max(rect.width, 1000) // 确保至少1000px宽度
     }
-    
+
     const groundY = 400 // 地面y位置
     const obstacleWidth = 48
     const obstacleHeight = 48
@@ -157,7 +157,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ground: gameData?.data?.groundUrl || '',
       obstacle: gameData?.data?.obstacleUrl || ''
     }
-    
+
     return {
       character: processedImages.character || baseUrls.character,
       background: processedImages.background || baseUrls.background,
@@ -165,7 +165,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       obstacle: processedImages.obstacle || baseUrls.obstacle
     }
   }, [gameData, processedImages])
-  
+
   // 游戏初始化
   useEffect(() => {
     initializeGround()
@@ -539,7 +539,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   backgroundSize: 'contain',
                   backgroundPosition: 'top left',
                   backgroundRepeat: 'repeat',
-                  border: '1px solid #654321'
                 }}
               />
             ))}
@@ -559,8 +558,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
-                  border: '2px solid #8B4513',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                 }}
               />
             ))}

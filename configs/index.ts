@@ -34,8 +34,8 @@ export const PRESET_THEMES: Theme[] = [
     description: 'A fantasy world of magic, dragons, castles, and forests',
     characterImage: 'https://img.alicdn.com/imgextra/i2/O1CN01jUlQ0L237JvklbMar_!!6000000007208-2-tps-1328-1328.png',
     backgroundImage: 'https://img.alicdn.com/imgextra/i4/O1CN01DX2Y9722KlwmMkO6R_!!6000000007102-2-tps-1664-928.png',
-    groundImage: 'https://img.alicdn.com/imgextra/i2/O1CN01SwxQmo26huQ1vgsCy_!!6000000007694-2-tps-1328-1328.png',
-    obstacleImage: 'https://img.alicdn.com/imgextra/i4/O1CN01HnH01p1TfND8IHMhN_!!6000000002409-2-tps-1328-1328.png',
+    groundImage: 'https://img.alicdn.com/imgextra/i1/O1CN014B08X31Zmb9ZUdlHr_!!6000000003237-2-tps-1328-1328.png',
+    obstacleImage: 'https://img.alicdn.com/imgextra/i2/O1CN01NKpF221RbahyffacB_!!6000000002130-2-tps-1328-1328.png',
   },
   {
     id: 'cyberpunk' as GameTheme,
@@ -43,8 +43,8 @@ export const PRESET_THEMES: Theme[] = [
     description: 'A sci-fi world of neon lights, machinery, and future cities',
     characterImage: 'https://img.alicdn.com/imgextra/i4/O1CN01nHC1qf203FYtqGjDS_!!6000000006793-2-tps-1328-1328.png',
     backgroundImage: 'https://img.alicdn.com/imgextra/i1/O1CN01ZV3lei1UBtKaCzJNU_!!6000000002480-2-tps-1664-928.png',
-    groundImage: 'https://img.alicdn.com/imgextra/i2/O1CN01SwxQmo26huQ1vgsCy_!!6000000007694-2-tps-1328-1328.png',
-    obstacleImage: 'https://img.alicdn.com/imgextra/i4/O1CN01HnH01p1TfND8IHMhN_!!6000000002409-2-tps-1328-1328.png',
+    groundImage: 'https://img.alicdn.com/imgextra/i1/O1CN014B08X31Zmb9ZUdlHr_!!6000000003237-2-tps-1328-1328.png',
+    obstacleImage: 'https://img.alicdn.com/imgextra/i2/O1CN01NKpF221RbahyffacB_!!6000000002130-2-tps-1328-1328.png',
   },
   {
     id: 'western-world' as GameTheme,
@@ -52,8 +52,8 @@ export const PRESET_THEMES: Theme[] = [
     description: 'A wild west world of cowboys, saloons, desert landscapes, and frontier towns',
     characterImage: 'https://img.alicdn.com/imgextra/i1/O1CN01pIaSnZ1c1pYZiwXvV_!!6000000003541-2-tps-1328-1328.png',
     backgroundImage: 'https://img.alicdn.com/imgextra/i1/O1CN01pLhR7Q1XiMFoAjrej_!!6000000002957-2-tps-1664-928.png',
-    groundImage: 'https://img.alicdn.com/imgextra/i2/O1CN01SwxQmo26huQ1vgsCy_!!6000000007694-2-tps-1328-1328.png',
-    obstacleImage: 'https://img.alicdn.com/imgextra/i4/O1CN01HnH01p1TfND8IHMhN_!!6000000002409-2-tps-1328-1328.png',
+    groundImage: 'https://img.alicdn.com/imgextra/i1/O1CN014B08X31Zmb9ZUdlHr_!!6000000003237-2-tps-1328-1328.png',
+    obstacleImage: 'https://img.alicdn.com/imgextra/i2/O1CN01NKpF221RbahyffacB_!!6000000002130-2-tps-1328-1328.png',
   },
   {
     id: 'underwater-world' as GameTheme,
@@ -61,7 +61,7 @@ export const PRESET_THEMES: Theme[] = [
     description: 'A mysterious underwater world of coral reefs, deep sea creatures, and ancient underwater civilizations',
     characterImage: 'https://img.alicdn.com/imgextra/i3/O1CN01k0uZLf1SMlVBXbKDG_!!6000000002233-2-tps-1328-1328.png',
     backgroundImage: 'https://img.alicdn.com/imgextra/i2/O1CN01tN5Gsu216HnoGtIKd_!!6000000006935-2-tps-1664-928.png',
-    groundImage: 'https://img.alicdn.com/imgextra/i2/O1CN01SwxQmo26huQ1vgsCy_!!6000000007694-2-tps-1328-1328.png',
-    obstacleImage: 'https://img.alicdn.com/imgextra/i4/O1CN01HnH01p1TfND8IHMhN_!!6000000002409-2-tps-1328-1328.png',
+    groundImage: 'https://img.alicdn.com/imgextra/i1/O1CN014B08X31Zmb9ZUdlHr_!!6000000003237-2-tps-1328-1328.png',
+    obstacleImage: 'https://img.alicdn.com/imgextra/i2/O1CN01NKpF221RbahyffacB_!!6000000002130-2-tps-1328-1328.png',
   }
 ] as const

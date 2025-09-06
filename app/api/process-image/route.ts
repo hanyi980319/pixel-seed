@@ -133,12 +133,12 @@ export async function POST(request: NextRequest) {
     // 下载原始图像
     const originalImageBuffer = await downloadImage(imageUrl)
 
-    // 只对角色图像进行抠图处理
+    // 对所有类型的图像进行抠图处理（去除棋盘格背景）
     let processedImageBuffer: Buffer
-    if (type === 'character') {
+    if (type === 'character' || type === 'ground' || type === 'obstacle') {
       processedImageBuffer = await removeCheckerboardBackground(originalImageBuffer)
     } else {
-      // 其他类型图像直接返回原图
+      // 背景类型图像直接返回原图
       processedImageBuffer = originalImageBuffer
     }
 
