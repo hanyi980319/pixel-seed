@@ -444,31 +444,55 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     return 900 // 调整默认值
   }, [])
 
-  // 获取当前主题的预览图片（优先使用抠图结果）
+  // 获取当前主题的预览图片（优先使用localStorage中的更新数据）
   const getThemeImages = () => {
+    console.log('🎨 getThemeImages - 开始获取主题图像')
+    console.log('  selectedTheme:', selectedTheme)
+    
     if (selectedTheme && selectedTheme !== 'custom') {
-      const theme = PRESET_THEMES.find(t => t.id === selectedTheme)
+      // 首先尝试从localStorage中获取更新后的主题数据
+      let updatedTheme = null
+      try {
+        const savedThemes = localStorage.getItem('pixel-seed-themes')
+        if (savedThemes) {
+          const themes = JSON.parse(savedThemes)
+          updatedTheme = themes.find((t: any) => t.id === selectedTheme)
+          console.log('  从localStorage获取的主题数据:', updatedTheme)
+        }
+      } catch (error) {
+        console.error('  读取localStorage主题数据失败:', error)
+      }
+      
+      // 如果没有找到更新的主题数据，使用默认配置
+      const theme = updatedTheme || PRESET_THEMES.find(t => t.id === selectedTheme)
+      
       if (theme) {
         // 对于预设主题，也检查是否有抠图结果
         const actualUrls = getActualImageUrls()
-        return {
+        const themeImages = {
           character: actualUrls.character || theme.characterImage,
           background: actualUrls.background || theme.backgroundImage,
           ground: actualUrls.ground || theme.groundImage,
           obstacle: actualUrls.obstacle || theme.obstacleImage
         }
+        console.log('  最终使用的主题图像:', themeImages)
+        console.log('  ground图像来源:', actualUrls.ground ? 'processedImages' : 'localStorage/PRESET_THEMES')
+        return themeImages
       }
     }
     // 如果是自定义主题或生成的内容，优先使用抠图结果
     if (gameData?.data || Object.keys(processedImages).length > 0) {
       const actualUrls = getActualImageUrls()
-      return {
+      const customImages = {
         character: actualUrls.character,
         background: actualUrls.background,
         ground: actualUrls.ground,
         obstacle: actualUrls.obstacle
       }
+      console.log('  自定义主题图像:', customImages)
+      return customImages
     }
+    console.log('  使用默认空图像')
     return {
       character: null,
       background: null,
