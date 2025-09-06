@@ -150,17 +150,28 @@ export const PRESET_THEMES: Theme[] = [
 
 #### 4.7 状态管理架构 (已实现)
 
-**全局状态 (page.tsx)**
-- `currentTheme`: 当前选中的主题数据
-- `gameState`: 游戏运行状态 (menu/playing/paused)
+**全局状态 (lib/store.ts)**
+- `gameState`: 游戏运行状态 (menu/loading/playing)
+- `selectedTheme`: 当前选中的主题 (fantasy/cyberpunk/custom)
+- `customPrompt`: 自定义提示词
+- `characterType`: 角色类型 (player/enemy/npc)
+- `levelType`: 关卡类型 (ground/underground/sky)
+- `currentAction`: 当前动作状态
+- `gameData`: 游戏数据对象
+  - `characterUrl`: 角色图像URL
+  - `levels`: 关卡数据数组
+- `currentLevelIndex`: 当前关卡索引
+- `totalLevels`: 总关卡数
+- `levelCount`: 关卡数量配置
+- `processedImages`: 已处理图像缓存
 - `isLoading`: 加载状态标识
 - `loadingProgress`: 加载进度 (0-100)
 - `loadingMessage`: 加载提示信息
-- `regeneratingImages`: 图像重新生成状态对象
-  - `character`: boolean - 角色图像生成状态
-  - `background`: boolean - 背景图像生成状态
-  - `ground`: boolean - 地面图像生成状态
-  - `obstacle`: boolean - 障碍物图像生成状态
+- `playerPosition`: 玩家位置坐标
+- `groundTiles`: 地面瓦片数据
+- `groundHeight`: 地面高度
+- `obstacles`: 障碍物数组
+- `isCollisionEnabled`: 碰撞检测开关
 
 **SideMenu组件状态管理**
 - `presetThemes`: 主题列表状态，包含预设和自定义主题
@@ -185,43 +196,60 @@ export const PRESET_THEMES: Theme[] = [
 - 表单输入状态
 - 临时交互状态
 
-#### 4.8 API设计 (规划中)
+#### 4.8 API设计 (已实现)
 
 **主题生成API**
 ```typescript
-POST /api/generate-theme
+POST /api/generate
 {
-  "prompt": "Epic Fantasy Adventure",
-  "elements": ["character", "background", "ground", "obstacle"]
+  "theme": "Epic Fantasy Adventure",
+  "prompt": "A magical realm with dragons and castles",
+  "types": ["character", "background", "ground", "obstacle"],
+  "levelCount": 3
 }
 
 Response:
 {
-  "themeId": "theme_123",
-  "name": "Epic Fantasy Adventure",
-  "description": "A magical realm filled with...",
-  "elements": {
-    "character": "base64_image_data",
-    "background": "base64_image_data",
-    "ground": "base64_image_data",
-    "obstacle": "base64_image_data"
-  }
+  "success": true,
+  "data": {
+    "characterUrl": "https://...",
+    "levels": [
+      {
+        "id": "level_1",
+        "backgroundUrl": "https://...",
+        "groundUrl": "https://...",
+        "obstacleUrl": "https://...",
+        "obstacles": [
+          {
+            "id": "obs_1",
+            "x": 200,
+            "y": 300,
+            "width": 64,
+            "height": 64,
+            "type": "rock"
+          }
+        ]
+      }
+    ]
+  },
+  "generationId": "gen_123456789",
+  "timestamp": "2024-01-01T00:00:00.000Z"
 }
 ```
 
-**单个图像重新生成API**
+**图像后处理API**
 ```typescript
-POST /api/regenerate-image
+POST /api/process-image
 {
-  "themeId": "theme_123",
-  "imageType": "character" | "background" | "ground" | "obstacle",
-  "prompt": "Epic Fantasy Adventure"
+  "imageUrl": "https://...",
+  "type": "ground" | "obstacle"
 }
 
 Response:
 {
-  "imageType": "character",
-  "imageData": "base64_image_data"
+  "success": true,
+  "processedUrl": "https://...",
+  "originalUrl": "https://..."
 }
 ```
 
@@ -237,6 +265,9 @@ Response:
 - **动画库**：Framer Motion 12.23.12 (已实现)
 - **图标库**：Ant Design Icons 6.0.0 + Lucide React 0.542.0 (已实现)
 - **组件架构**：模块化组件设计，统一导出管理 (已实现)
+  - 集中化UI组件导出：`components/ui/index.ts`
+  - 支持类型导出和组件重导出
+  - 统一的组件引用路径管理
 - **配置管理**：集中化配置文件管理 (已实现)
 - **数据持久化**：localStorage API用于主题存储和状态管理 (已实现)
 
@@ -252,8 +283,12 @@ Response:
 - **API端点**：https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation
 - **认证方式**：Bearer Token (API Key: sk-84083f55216c4c53ad9ebf77e3f2dc7f)
 - **调用方式**：HTTP同步接口，发送POST请求后立即返回结果
-- **图像规格**：角色 1328x1328px，背景 1664x928px
-- **并发控制**：Promise.all 并行处理角色和背景生成
+- **图像规格**：角色 1328x1328px，背景 1664x928px，地面和障碍物支持多种尺寸
+- **并发控制**：Promise.all 并行处理多种图像类型生成
+- **延迟处理**：智能延迟机制防止API限流，支持批量生成优化
+- **图像后处理**：自动抠图处理地面和障碍物图像，去除背景
+- **性能监控**：内存使用监控和垃圾回收机制
+- **多关卡支持**：支持生成多个关卡的图像资源
 - **错误处理**：完善的异常捕获和用户友好的错误信息
 - **参考文档**：GitHub - https://github.com/QwenLM/Qwen-Image
 

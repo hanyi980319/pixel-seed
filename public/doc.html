@@ -915,7 +915,13 @@
                 <li><strong>HTTP客户端</strong>：Fetch API (已实现)</li>
                 <li><strong>动画库</strong>：Framer Motion 12.23.12 (已实现)</li>
                 <li><strong>图标库</strong>：Ant Design Icons 6.0.0 + Lucide React 0.542.0 (已实现)</li>
-                <li><strong>组件架构</strong>：模块化组件设计，统一导出管理 (已实现)</li>
+                <li><strong>组件架构</strong>：模块化组件设计，统一导出管理 (已实现)
+                    <ul>
+                        <li>集中化UI组件导出：<code>components/ui/index.ts</code></li>
+                        <li>支持类型导出和组件重导出</li>
+                        <li>统一的组件引用路径管理</li>
+                    </ul>
+                </li>
                 <li><strong>配置管理</strong>：集中化配置文件管理 (已实现)</li>
                 <li><strong>持久化存储</strong>：localStorage 主题数据持久化 (已实现)</li>
             </ul>
@@ -935,8 +941,12 @@
                 <li><strong>API端点</strong>：https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation</li>
                 <li><strong>认证方式</strong>：Bearer Token (API Key)</li>
                 <li><strong>调用方式</strong>：HTTP同步接口，发送POST请求后立即返回结果</li>
-                <li><strong>图像处理</strong>：Sharp.js 进行格式转换和优化</li>
-                <li><strong>并发控制</strong>：Promise.all 并行处理角色和背景生成</li>
+                <li><strong>图像规格</strong>：角色 1328x1328px，背景 1664x928px，地面和障碍物支持多种尺寸</li>
+                <li><strong>并发控制</strong>：Promise.all 并行处理多种图像类型生成</li>
+                <li><strong>延迟处理</strong>：智能延迟机制防止API限流，支持批量生成优化</li>
+                <li><strong>图像后处理</strong>：自动抠图处理地面和障碍物图像，去除背景</li>
+                <li><strong>性能监控</strong>：内存使用监控和垃圾回收机制</li>
+                <li><strong>多关卡支持</strong>：支持生成多个关卡的图像资源</li>
                 <li><strong>实现状态</strong>：完整的API路由实现，支持主题选择、提示词构建、并行生成</li>
                 <li><strong>错误处理</strong>：完善的异常捕获和用户友好的错误提示</li>
                 <li><strong>参数配置</strong>：支持不同尺寸、负面提示词、水印控制等高级参数</li>
@@ -995,12 +1005,16 @@
             <ul>
                 <li><strong>lib/store.ts</strong>：Zustand状态管理
                     <ul>
-                        <li>游戏状态管理（gameState, isLoading等）</li>
-                        <li>主题选择状态（selectedTheme, customPrompt）</li>
-                        <li>角色和关卡数据管理（characterType, levelType）</li>
-                        <li>游戏进度和加载状态</li>
-                        <li>regeneratingImages状态对象（character, background, ground, obstacle）</li>
-                        <li>主题删除和持久化存储管理</li>
+                        <li>游戏状态管理（gameState: menu/loading/playing）</li>
+                        <li>主题选择状态（selectedTheme: fantasy/cyberpunk/custom, customPrompt）</li>
+                        <li>角色和关卡数据管理（characterType: player/enemy/npc, levelType: ground/underground/sky）</li>
+                        <li>游戏数据对象（gameData: characterUrl, levels数组）</li>
+                        <li>关卡管理（currentLevelIndex, totalLevels, levelCount）</li>
+                        <li>已处理图像缓存（processedImages）</li>
+                        <li>游戏进度和加载状态（isLoading, loadingProgress, loadingMessage）</li>
+                        <li>玩家位置和游戏元素（playerPosition, groundTiles, obstacles）</li>
+                        <li>碰撞检测控制（isCollisionEnabled）</li>
+                        <li>持久化存储和游戏重置功能</li>
                     </ul>
                 </li>
                 <li><strong>types/index.ts</strong>：TypeScript类型定义
@@ -1678,25 +1692,52 @@ sequenceDiagram
             <pre><code class="language-typescript">// POST /api/generate
 // 请求体
 {
-  "theme": "epic-fantasy" | "cyberpunk" | "western" | "underwater" | "custom",
-  "customPrompt": "string", // 自定义主题时必填
-  "characterType": "player" | "enemy" | "npc",
-  "levelType": "ground" | "underground" | "aerial"
+  "theme": "Epic Fantasy Adventure",
+  "prompt": "A magical realm with dragons and castles",
+  "types": ["character", "background", "ground", "obstacle"],
+  "levelCount": 3
 }
 
 // 响应体
 {
   "success": true,
   "data": {
-    "character": "https://...", // 角色图片URL
-    "background": "https://..." // 背景图片URL
+    "characterUrl": "https://...",
+    "levels": [
+      {
+        "id": "level_1",
+        "backgroundUrl": "https://...",
+        "groundUrl": "https://...",
+        "obstacleUrl": "https://...",
+        "obstacles": [
+          {
+            "id": "obs_1",
+            "x": 200,
+            "y": 300,
+            "width": 64,
+            "height": 64,
+            "type": "rock"
+          }
+        ]
+      }
+    ]
   },
-  "metadata": {
-    "theme": "epic-fantasy",
-    "generatedAt": "2024-01-01T00:00:00Z",
-    "characterPrompt": "...",
-    "backgroundPrompt": "..."
-  }
+  "generationId": "gen_123456789",
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+
+// POST /api/process-image (图像后处理)
+// 请求体
+{
+  "imageUrl": "https://...",
+  "type": "ground" | "obstacle"
+}
+
+// 响应体
+{
+  "success": true,
+  "processedUrl": "https://...",
+  "originalUrl": "https://..."
 }</code></pre>
             
             <h3>前端集成</h3>
