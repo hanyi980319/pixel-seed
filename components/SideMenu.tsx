@@ -131,22 +131,22 @@ const SideMenu: React.FC<SideMenuProps> = ({
         setGameData(result)
         setLoadingMessage('Generation complete!')
 
+        const finalThemeId = `custom-${Date.now()}` as GameTheme
+        
         // 更新全局状态中的处理后图像，确保新生成的图像能正确显示和持久化
         const { updateProcessedImage } = useGameStore.getState()
         if (result.data.characterUrl) {
-          updateProcessedImage('character', result.data.characterUrl)
+          updateProcessedImage(finalThemeId, 'character', result.data.characterUrl)
         }
         if (result.data.backgroundUrl) {
-          updateProcessedImage('background', result.data.backgroundUrl)
+          updateProcessedImage(finalThemeId, 'background', result.data.backgroundUrl)
         }
         if (result.data.groundUrl) {
-          updateProcessedImage('ground', result.data.groundUrl)
+          updateProcessedImage(finalThemeId, 'ground', result.data.groundUrl)
         }
         if (result.data.obstacleUrl) {
-          updateProcessedImage('obstacle', result.data.obstacleUrl)
+          updateProcessedImage(finalThemeId, 'obstacle', result.data.obstacleUrl)
         }
-
-        const finalThemeId = `custom-${Date.now()}` as GameTheme
         const finalUpdatedThemes = updatedThemes.map(theme => {
           if ((theme as any).isLoading) {
             return {

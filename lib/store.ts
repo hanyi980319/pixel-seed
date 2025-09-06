@@ -18,10 +18,12 @@ interface GameData {
 }
 
 interface ProcessedImages {
-  character?: string
-  background?: string
-  ground?: string
-  obstacle?: string
+  [themeId: string]: {
+    character?: string
+    background?: string
+    ground?: string
+    obstacle?: string
+  }
 }
 
 interface Obstacle {
@@ -69,7 +71,8 @@ interface GameStore {
   // 抠图结果
   processedImages: ProcessedImages
   setProcessedImages: (images: ProcessedImages) => void
-  updateProcessedImage: (type: keyof ProcessedImages, url: string) => void
+  updateProcessedImage: (themeId: string, type: 'character' | 'background' | 'ground' | 'obstacle', url: string) => void
+  getProcessedImagesForTheme: (themeId: string) => { character?: string; background?: string; ground?: string; obstacle?: string }
   
   // 加载状态
   isLoading: boolean
@@ -141,11 +144,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ processedImages: images })
     get().saveToLocalStorage()
   },
-  updateProcessedImage: (type, url) => {
+  updateProcessedImage: (themeId, type, url) => {
     set((state) => ({
-      processedImages: { ...state.processedImages, [type]: url }
+      processedImages: {
+        ...state.processedImages,
+        [themeId]: {
+          ...state.processedImages[themeId],
+          [type]: url
+        }
+      }
     }))
     get().saveToLocalStorage()
+  },
+  getProcessedImagesForTheme: (themeId) => {
+    const state = get()
+    return state.processedImages[themeId] || {}
   },
   setLoading: (loading) => set({ isLoading: loading }),
   setLoadingProgress: (progress) => set({ loadingProgress: progress }),

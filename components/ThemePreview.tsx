@@ -26,7 +26,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
   }>({ character: false, background: false, ground: false, obstacle: false })
   
   // 使用全局状态管理抠图结果
-  const { processedImages, updateProcessedImage, loadFromLocalStorage } = useGameStore()
+  const { getProcessedImagesForTheme, updateProcessedImage, loadFromLocalStorage } = useGameStore()
   
   // 组件加载时从localStorage恢复数据
   useEffect(() => {
@@ -39,6 +39,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       ground: null,
       obstacle: null
     }
+    
+    // 获取当前主题ID
+    const currentThemeId = selectedTheme === 'custom' ? 'custom' : selectedTheme || 'fantasy'
     
     if (selectedTheme && selectedTheme !== 'custom') {
       const theme = themes.find(t => t.id === selectedTheme)
@@ -61,12 +64,15 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       }
     }
     
+    // 获取当前主题的处理后图像
+    const themeProcessedImages = getProcessedImagesForTheme(currentThemeId)
+    
     // 使用处理后的图像URL覆盖原始URL
     return {
-      character: processedImages.character ? { url: processedImages.character } : baseImages.character,
-      background: processedImages.background ? { url: processedImages.background } : baseImages.background,
-      ground: processedImages.ground ? { url: processedImages.ground } : baseImages.ground,
-      obstacle: processedImages.obstacle ? { url: processedImages.obstacle } : baseImages.obstacle
+      character: themeProcessedImages.character ? { url: themeProcessedImages.character } : baseImages.character,
+      background: themeProcessedImages.background ? { url: themeProcessedImages.background } : baseImages.background,
+      ground: themeProcessedImages.ground ? { url: themeProcessedImages.ground } : baseImages.ground,
+      obstacle: themeProcessedImages.obstacle ? { url: themeProcessedImages.obstacle } : baseImages.obstacle
     }
   }
 
@@ -97,8 +103,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       const result = await response.json()
       
       if (result.success) {
-        // 直接将处理后的图像应用于当前角色形象并保存到全局状态
-        updateProcessedImage(imageType, result.data.processedUrl)
+        // 获取当前主题ID并保存抠图结果
+        const currentThemeId = selectedTheme === 'custom' ? 'custom' : selectedTheme || 'fantasy'
+        updateProcessedImage(currentThemeId, imageType, result.data.processedUrl)
         message.success(`${imageType} image processed successfully!`)
       } else {
         message.error(`Failed to process ${imageType} image: ${result.error}`)
