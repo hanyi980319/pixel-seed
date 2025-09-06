@@ -14,6 +14,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 }) => {
   const [isMobile, setIsMobile] = useState(false)
   const gameCanvasRef = useRef<HTMLDivElement>(null)
+  const imageCache = useRef<{ [key: string]: HTMLImageElement }>({})
 
   // Canvas组件的状态和逻辑
   const {
@@ -33,6 +34,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     isCollisionEnabled,
     loadFromLocalStorage,
     getProcessedImagesForTheme,
+    currentLevelIndex,
+    totalLevels,
+    nextLevel,
+    isLastLevel,
+    getCurrentLevel,
+    setGameData
   } = useGameStore()
 
   // 组件加载时从localStorage恢复数据
@@ -44,6 +51,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const [isGameOver, setIsGameOver] = useState(false)
   const [currentAction, setCurrentAction] = useState('Idle')
   const [keys, setKeys] = useState<Set<string>>(new Set())
+  const [preloadedImages, setPreloadedImages] = useState<{ [key: string]: boolean }>({})
+  const [isPreloading, setIsPreloading] = useState(false)
 
   // 初始化地面系统
   const initializeGround = useCallback(() => {
@@ -137,8 +146,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         addObstacle(obstacle)
       }
     }
-
-    console.log(`成功生成 ${generatedObstacles.length} 个障碍物，分布均匀且无重叠`)
   }, [addObstacle])
 
   // 设置玩家初始位置
@@ -150,11 +157,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 获取实际使用的图像URL（优先使用抠图结果）
   const getActualImageUrls = useCallback(() => {
+    const currentLevel = getCurrentLevel()
     const baseUrls = {
       character: gameData?.data?.characterUrl || '',
-      background: gameData?.data?.backgroundUrl || '',
-      ground: gameData?.data?.groundUrl || '',
-      obstacle: gameData?.data?.obstacleUrl || ''
+      background: currentLevel?.backgroundUrl || '',
+      ground: currentLevel?.groundUrl || '',
+      obstacle: currentLevel?.obstacleUrl || ''
     }
 
     // 获取当前主题的抠图结果
@@ -171,12 +179,44 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 游戏初始化
   useEffect(() => {
+    console.log('游戏初始化 - gameData:', gameData, 'totalLevels:', totalLevels, 'currentLevelIndex:', currentLevelIndex)
+    
+    // 如果没有游戏数据，创建测试数据
+    if (!gameData?.data?.levels || gameData.data.levels.length === 0) {
+      const testGameData = {
+        success: true,
+        data: {
+          characterUrl: 'https://via.placeholder.com/48x48/FF6B6B/FFFFFF?text=C',
+          levels: [
+            {
+              id: 'level-1',
+              backgroundUrl: 'https://via.placeholder.com/800x400/87CEEB/FFFFFF?text=Level+1',
+              groundUrl: 'https://via.placeholder.com/800x100/8FBC8F/FFFFFF?text=Ground+1',
+              obstacleUrl: 'https://via.placeholder.com/48x48/8B4513/FFFFFF?text=Rock',
+              obstacles: []
+            },
+            {
+              id: 'level-2', 
+              backgroundUrl: 'https://via.placeholder.com/800x400/FFB6C1/FFFFFF?text=Level+2',
+              groundUrl: 'https://via.placeholder.com/800x100/DDA0DD/FFFFFF?text=Ground+2',
+              obstacleUrl: 'https://via.placeholder.com/48x48/696969/FFFFFF?text=Stone',
+              obstacles: []
+            }
+          ]
+        },
+        generationId: 'test-' + Date.now(),
+        timestamp: new Date().toISOString()
+      }
+      setGameData(testGameData)
+      console.log('创建测试游戏数据:', testGameData)
+    }
+    
     initializeGround()
     if (obstacles.length === 0) {
       initializeObstacles()
     }
     setPlayerInitialPosition()
-  }, [initializeGround, initializeObstacles, setPlayerInitialPosition])
+  }, [initializeGround, initializeObstacles, setPlayerInitialPosition, gameData, totalLevels, currentLevelIndex, setGameData])
 
 
   // 键盘控制
@@ -294,18 +334,64 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             }
             // 检查是否到达边界
             if (testX >= gameEndBoundary) {
-              // 触发游戏结束 - 随机选择有趣的提示文案
-              const gameOverMessages = [
-                '🎯 Congratulations explorer! You have reached the edge of the world!',
-                '🚀 Amazing! You successfully traversed the entire level!',
-                '⭐ Mission complete! You are a true jumping master!',
-                '🏆 Outstanding! You conquered this pixel world!',
-                '🎮 Awesome! Ready for the next challenge!'
-              ]
-              const randomMessage = gameOverMessages[Math.floor(Math.random() * gameOverMessages.length)]
-              // 确保状态同步更新
-              setCurrentAction(`Game Over - ${randomMessage}`)
-              setTimeout(() => setIsGameOver(true), 0) // 使用setTimeout确保currentAction先更新
+              // 调试信息：输出当前关卡状态
+              console.log('到达边界 - currentLevelIndex:', currentLevelIndex, 'totalLevels:', totalLevels, 'isLastLevel:', isLastLevel())
+              // 检查是否为最后一个关卡
+              if (isLastLevel()) {
+                // 触发游戏结束 - 随机选择有趣的提示文案
+                const gameOverMessages = [
+                  '🎯 Congratulations explorer! You have reached the edge of the world!',
+                  '🚀 Amazing! You successfully traversed the entire level!',
+                  '⭐ Mission complete! You are a true jumping master!',
+                  '🏆 Outstanding! You conquered this pixel world!',
+                  '🎮 Awesome! Ready for the next challenge!'
+                ]
+                const randomMessage = gameOverMessages[Math.floor(Math.random() * gameOverMessages.length)]
+                // 确保状态同步更新
+                setCurrentAction(`Game Over - ${randomMessage}`)
+                setTimeout(() => setIsGameOver(true), 0) // 使用setTimeout确保currentAction先更新
+              } else {
+                // 切换到下一关卡
+                const nextLevelMessages = [
+                  '🌟 Level Complete! Loading next challenge...',
+                  '🚀 Great job! Advancing to the next level...',
+                  '⭐ Well done! Next level awaits...',
+                  '🎯 Level cleared! Moving forward...'
+                ]
+                const randomMessage = nextLevelMessages[Math.floor(Math.random() * nextLevelMessages.length)]
+                setCurrentAction(randomMessage)
+
+                // 延迟切换关卡，让玩家看到提示信息
+                setTimeout(async () => {
+                  // 预加载下一关卡图像
+                  const nextLevelIndex = currentLevelIndex + 1
+                  if (gameData?.data?.levels && nextLevelIndex < gameData.data.levels.length) {
+                    const nextLevel = gameData.data.levels[nextLevelIndex]
+                    const nextLevelImages: { [key: string]: string } = {}
+                    if (nextLevel.backgroundUrl) nextLevelImages.background = nextLevel.backgroundUrl
+                    if (nextLevel.groundUrl) nextLevelImages.ground = nextLevel.groundUrl
+                    if (nextLevel.obstacleUrl) nextLevelImages.obstacle = nextLevel.obstacleUrl
+
+                    if (Object.keys(nextLevelImages).length > 0) {
+                      await preloadImages(nextLevelImages)
+                    }
+                  }
+
+                  nextLevel()
+                  // 重置角色位置到关卡开始位置
+                  setCharacter(prev => ({
+                    ...prev,
+                    x: 50,
+                    y: 352,
+                    velocityY: 0,
+                    isJumping: false,
+                    onGround: true
+                  }))
+                  // 重新生成障碍物位置
+                  initializeObstacles()
+                  setCurrentAction('Level started!')
+                }, 1500)
+              }
             } else if (!checkCollision(testX, newY, playerWidth, playerHeight)) {
               newX = testX
               newFacingDirection = 1 // 面向右
@@ -437,6 +523,54 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     setIsPaused(!isPaused)
   }
 
+  // 图像预加载函数
+  const preloadImages = useCallback(async (imageUrls: { [key: string]: string }) => {
+    setIsPreloading(true)
+    const loadPromises = Object.entries(imageUrls).map(([key, url]) => {
+      return new Promise<void>((resolve, reject) => {
+        if (!url || preloadedImages[url]) {
+          resolve()
+          return
+        }
+
+        const img = new Image()
+        img.onload = () => {
+          imageCache.current[url] = img
+          setPreloadedImages(prev => ({ ...prev, [url]: true }))
+          resolve()
+        }
+        img.onerror = () => {
+          console.warn(`Failed to preload image: ${url}`)
+          resolve() // 即使失败也继续，不阻塞游戏
+        }
+        img.src = url
+      })
+    })
+
+    await Promise.all(loadPromises)
+    setIsPreloading(false)
+  }, [preloadedImages])
+
+  // 预加载当前关卡图像
+  useEffect(() => {
+    const themeImages = getThemeImages()
+    const imagesToPreload = {
+      character: themeImages.character,
+      background: themeImages.background,
+      ground: themeImages.ground,
+      obstacle: themeImages.obstacle
+    }
+
+    // 过滤掉空值
+    const validImages = Object.fromEntries(
+      Object.entries(imagesToPreload).filter(([_, url]) => url)
+    )
+
+    if (Object.keys(validImages).length > 0) {
+      preloadImages(validImages)
+    }
+  }, [selectedTheme, currentLevelIndex, preloadImages])
+
   // 获取当前游戏边界值的函数
   const getCurrentGameBoundary = useCallback(() => {
     if (gameCanvasRef.current) {
@@ -449,9 +583,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // 获取当前主题的预览图片（优先使用localStorage中的更新数据）
   const getThemeImages = () => {
-    console.log('🎨 getThemeImages - 开始获取主题图像')
-    console.log('  selectedTheme:', selectedTheme)
-
     if (selectedTheme && selectedTheme !== 'custom') {
       // 首先尝试从localStorage中获取更新后的主题数据
       let updatedTheme = null
@@ -460,7 +591,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         if (savedThemes) {
           const themes = JSON.parse(savedThemes)
           updatedTheme = themes.find((t: any) => t.id === selectedTheme)
-          console.log('  从localStorage获取的主题数据:', updatedTheme)
         }
       } catch (error) {
         console.error('  读取localStorage主题数据失败:', error)
@@ -478,13 +608,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           ground: actualUrls.ground || theme.groundImage,
           obstacle: actualUrls.obstacle || theme.obstacleImage
         }
-        console.log('  最终使用的主题图像:', themeImages)
-        console.log('  ground图像来源:', actualUrls.ground ? 'processedImages' : 'localStorage/PRESET_THEMES')
         return themeImages
       }
     }
     // 如果是自定义主题或生成的内容，优先使用抠图结果
-    if (gameData?.data || Object.keys(processedImages).length > 0) {
+    if (getCurrentLevel() || Object.keys(processedImages).length > 0) {
       const actualUrls = getActualImageUrls()
       const customImages = {
         character: actualUrls.character,
@@ -492,10 +620,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         ground: actualUrls.ground,
         obstacle: actualUrls.obstacle
       }
-      console.log('  自定义主题图像:', customImages)
       return customImages
     }
-    console.log('  使用默认空图像')
     return {
       character: null,
       background: null,
@@ -571,23 +697,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             ))}
 
             {/* 障碍物 */}
-            {obstacles.map(obstacle => (
-              <div
-                key={obstacle.id}
-                className="absolute rounded"
-                style={{
-                  left: obstacle.x,
-                  top: obstacle.y,
-                  width: obstacle.width,
-                  height: obstacle.height,
-                  backgroundImage: themeImages.obstacle ? `url(${themeImages.obstacle})` : 'none',
-                  backgroundColor: themeImages.obstacle ? 'transparent' : '#654321',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                }}
-              />
-            ))}
+            {obstacles.map(obstacle => {
+              const currentLevel = getCurrentLevel()
+              const obstacleUrl = currentLevel?.obstacleUrl || themeImages.obstacle
+              return (
+                <div
+                  key={obstacle.id}
+                  className="absolute rounded"
+                  style={{
+                    left: obstacle.x,
+                    top: obstacle.y,
+                    width: obstacle.width,
+                    height: obstacle.height,
+                    backgroundImage: obstacleUrl ? `url(${obstacleUrl})` : 'none',
+                    backgroundColor: obstacleUrl ? 'transparent' : '#654321',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                />
+              )
+            })}
 
             {/* 角色 */}
             <motion.div

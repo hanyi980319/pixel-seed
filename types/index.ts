@@ -13,18 +13,31 @@ export interface Theme {
   isLoading?: boolean
 }
 
+// 关卡数据类型
+export interface LevelData {
+  id: string
+  backgroundUrl: string
+  groundUrl?: string
+  obstacleUrl?: string
+  obstacles: Array<{
+    id: string
+    x: number
+    y: number
+    width: number
+    height: number
+    type: string
+  }>
+}
+
 // 游戏数据类型
 export interface GameData {
   success?: boolean
   data?: {
     characterUrl: string
-    backgroundUrl: string
-    groundUrl?: string
-    obstacleUrl?: string
+    levels: LevelData[]
   }
   generationId?: string
   timestamp?: string
-
 }
 
 // 项目头部组件Props
@@ -46,6 +59,8 @@ export interface ThemeCustomizerProps {
   onThemeNameChange: (name: string) => void
   customPrompt: string
   onPromptChange: (prompt: string) => void
+  levelCount?: number
+  onLevelCountChange?: (count: number) => void
 }
 
 // 操作按钮组件Props

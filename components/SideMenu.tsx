@@ -44,8 +44,10 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const {
     selectedTheme,
     customPrompt,
+    levelCount,
     setSelectedTheme,
     setCustomPrompt,
+    setLevelCount,
     setGameState,
     loadingMessage,
     setLoadingMessage,
@@ -101,7 +103,13 @@ const SideMenu: React.FC<SideMenuProps> = ({
     
     try {
       setLoading(true)
-      setLoadingMessage('Generating your pixel world...')
+      
+      // 根据关卡数量调整加载提示
+      const isLargeGeneration = levelCount > 3
+      const baseMessage = isLargeGeneration 
+        ? `Generating ${levelCount} levels (this may take longer)...` 
+        : 'Generating your pixel world...'
+      setLoadingMessage(baseMessage)
       setGameState('loading')
       
       // Set all image types to regenerating state
@@ -116,10 +124,14 @@ const SideMenu: React.FC<SideMenuProps> = ({
       setSelectedTheme(loadingThemeId)
       onThemeUpdate?.(updatedThemes)
 
+      // 性能监控：记录开始时间
+      const startTime = Date.now()
+
       const requestBody = {
         theme: isCustomTheme ? (customThemeName.trim() || 'custom') : selectedTheme,
         prompt: isCustomTheme ? customPrompt : selectedThemeInfo?.description || '',
-        types: ['character', 'background', 'ground', 'obstacle'] as const
+        types: ['character', 'background', 'ground', 'obstacle'] as const,
+        levelCount: levelCount
       }
 
       const result = generateImages ? await generateImages(requestBody) : null
@@ -128,34 +140,50 @@ const SideMenu: React.FC<SideMenuProps> = ({
       }
 
       if (result.success && result.data) {
+        // 性能监控：计算生成时间
+        const endTime = Date.now()
+        const generationTime = (endTime - startTime) / 1000
+        console.log(`Generation completed in ${generationTime.toFixed(2)} seconds for ${levelCount} levels`)
+        
         setGameData(result)
-        setLoadingMessage('Generation complete!')
+        
+        // 根据生成时间和关卡数量显示不同的成功消息
+        const successMessage = isLargeGeneration 
+          ? `${levelCount} levels created successfully! (${generationTime.toFixed(1)}s)`
+          : 'Generation complete!'
+        setLoadingMessage(successMessage)
 
         const finalThemeId = `custom-${Date.now()}` as GameTheme
         
         // 更新全局状态中的处理后图像，确保新生成的图像能正确显示和持久化
         const { updateProcessedImage } = useGameStore.getState()
+        
+        // 角色图像从根级别获取
         if (result.data.characterUrl) {
           updateProcessedImage(finalThemeId, 'character', result.data.characterUrl)
         }
-        if (result.data.backgroundUrl) {
-          updateProcessedImage(finalThemeId, 'background', result.data.backgroundUrl)
+        
+        // 背景和地面图像从第一个关卡获取
+        const firstLevel = result.data.levels?.[0]
+        if (firstLevel?.backgroundUrl) {
+          updateProcessedImage(finalThemeId, 'background', firstLevel.backgroundUrl)
         }
-        if (result.data.groundUrl) {
-          updateProcessedImage(finalThemeId, 'ground', result.data.groundUrl)
+        if (firstLevel?.groundUrl) {
+          updateProcessedImage(finalThemeId, 'ground', firstLevel.groundUrl)
         }
-        if (result.data.obstacleUrl) {
-          updateProcessedImage(finalThemeId, 'obstacle', result.data.obstacleUrl)
+        if (firstLevel?.obstacleUrl) {
+          updateProcessedImage(finalThemeId, 'obstacle', firstLevel.obstacleUrl)
         }
+        
         const finalUpdatedThemes = updatedThemes.map(theme => {
           if ((theme as any).isLoading) {
             return {
               ...theme,
               id: finalThemeId,
               characterImage: result.data.characterUrl || '',
-              backgroundImage: result.data.backgroundUrl || '',
-              groundImage: result.data.groundUrl || '',
-              obstacleImage: result.data.obstacleUrl || '',
+              backgroundImage: firstLevel?.backgroundUrl || '',
+              groundImage: firstLevel?.groundUrl || '',
+              obstacleImage: firstLevel?.obstacleUrl || '',
               isLoading: false
             } as any
           }
@@ -248,6 +276,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
           onThemeNameChange={setCustomThemeName}
           customPrompt={customPrompt}
           onPromptChange={setCustomPrompt}
+          levelCount={levelCount}
+          onLevelCountChange={setLevelCount}
         />
 
         <ActionButtons

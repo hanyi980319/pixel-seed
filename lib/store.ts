@@ -5,13 +5,19 @@ export type GameState = 'menu' | 'loading' | 'playing'
 export type CharacterType = 'player' | 'enemy' | 'npc'
 export type LevelType = 'ground' | 'underground' | 'sky'
 
+interface LevelData {
+  id: string
+  backgroundUrl: string
+  groundUrl?: string
+  obstacleUrl?: string
+  obstacles: Obstacle[]
+}
+
 interface GameData {
   success?: boolean
   data?: {
     characterUrl: string
-    backgroundUrl: string
-    groundUrl?: string
-    obstacleUrl?: string
+    levels: LevelData[]
   }
   generationId?: string
   timestamp?: string
@@ -68,6 +74,17 @@ interface GameStore {
   gameData: GameData
   setGameData: (data: GameData) => void
   
+  // 多关卡相关
+  currentLevelIndex: number
+  totalLevels: number
+  levelCount: number
+  setCurrentLevelIndex: (index: number) => void
+  setTotalLevels: (count: number) => void
+  setLevelCount: (count: number) => void
+  getCurrentLevel: () => LevelData | null
+  nextLevel: () => boolean
+  isLastLevel: () => boolean
+  
   // 抠图结果
   processedImages: ProcessedImages
   setProcessedImages: (images: ProcessedImages) => void
@@ -119,6 +136,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   levelType: 'ground',
   currentAction: 'idle',
   gameData: {},
+  currentLevelIndex: 0,
+  totalLevels: 1,
+  levelCount: 1,
   processedImages: {},
   isLoading: false,
   loadingProgress: 0,
@@ -154,19 +174,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
         
         // 清除有新数据的图像类型的缓存
         if (data.data.characterUrl) delete themeImages.character
-        if (data.data.backgroundUrl) delete themeImages.background
-        if (data.data.groundUrl) delete themeImages.ground
-        if (data.data.obstacleUrl) delete themeImages.obstacle
+        if (data.data.levels) {
+          delete themeImages.background
+          delete themeImages.ground
+          delete themeImages.obstacle
+        }
         
         updatedProcessedImages[currentThemeId] = themeImages
       }
       
-      set({ gameData: data, processedImages: updatedProcessedImages })
+      // 设置总关卡数
+      const totalLevels = data.data.levels?.length || 1
+      set({ gameData: data, processedImages: updatedProcessedImages, totalLevels })
+      
+      // 确保currentLevelIndex不超过总关卡数
+      const currentState = get()
+      if (currentState.currentLevelIndex >= totalLevels) {
+        set({ currentLevelIndex: 0 })
+      }
     } else {
       set({ gameData: data })
     }
     
     get().saveToLocalStorage()
+  },
+  
+  // 多关卡相关方法
+  setCurrentLevelIndex: (index) => set({ currentLevelIndex: index }),
+  setTotalLevels: (count) => set({ totalLevels: count }),
+  setLevelCount: (count) => set({ levelCount: count }),
+  getCurrentLevel: () => {
+    const state = get()
+    const levels = state.gameData.data?.levels
+    if (!levels || levels.length === 0) return null
+    return levels[state.currentLevelIndex] || null
+  },
+  nextLevel: () => {
+    const state = get()
+    const nextIndex = state.currentLevelIndex + 1
+    if (nextIndex < state.totalLevels) {
+      set({ currentLevelIndex: nextIndex })
+      return true
+    }
+    return false
+  },
+  isLastLevel: () => {
+    const state = get()
+    return state.currentLevelIndex >= state.totalLevels - 1
   },
   setProcessedImages: (images) => {
     set({ processedImages: images })
@@ -241,6 +295,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       levelType: 'ground',
       currentAction: 'idle',
       gameData: currentState.gameData, // 保留游戏数据
+      currentLevelIndex: 0, // 重置到第一关
+      totalLevels: currentState.totalLevels, // 保留总关卡数
+      levelCount: currentState.levelCount, // 保留关卡数量设置
       processedImages: currentState.processedImages, // 保留抠图结果
       isLoading: false,
       loadingProgress: 0,

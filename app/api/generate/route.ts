@@ -10,6 +10,7 @@ interface GenerateRequest {
   theme: string
   prompt: string
   types?: ('character' | 'background' | 'ground' | 'obstacle')[]
+  levelCount?: number // 关卡数量，默认为1
 }
 
 // 构建游戏风格提示词
@@ -147,10 +148,38 @@ async function callDashScopeAPI(
   }
 }
 
+// 生成障碍物配置
+function generateObstacleLayout(levelId: string): Array<{
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  type: string
+}> {
+  const obstacles = []
+  const obstacleCount = 3 + Math.floor(Math.random() * 3) // 3-5个障碍物
+  
+  for (let i = 0; i < obstacleCount; i++) {
+    obstacles.push({
+      id: `${levelId}-obstacle-${i}`,
+      x: 200 + Math.random() * 600, // 随机x位置
+      y: 300 + Math.random() * 100, // 随机y位置
+      width: 40 + Math.random() * 40, // 随机宽度
+      height: 40 + Math.random() * 40, // 随机高度
+      type: 'obstacle'
+    })
+  }
+  
+  return obstacles
+}
+
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
     const body: GenerateRequest = await request.json()
-    const { theme, prompt, types = ['character', 'background'] } = body
+    const { theme, prompt, types = ['character', 'background', 'ground', 'obstacle'], levelCount = 1 } = body
 
     // 验证请求参数
     if (!theme || !prompt) {
@@ -158,6 +187,19 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Missing required parameters: theme and prompt' },
         { status: 400 }
       )
+    }
+
+    // 验证levelCount参数
+    if (levelCount < 1 || levelCount > 10) {
+      return NextResponse.json(
+        { success: false, error: 'levelCount must be between 1 and 10' },
+        { status: 400 }
+      )
+    }
+
+    // 性能监控：大量关卡生成时的警告
+    if (levelCount > 5) {
+      console.warn(`Large generation request: ${levelCount} levels. This may take significant time and resources.`)
     }
 
     // 验证types参数
@@ -170,46 +212,112 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 构建各类型的提示词
-     const prompts: Record<string, string> = {}
+    console.log(`Generating ${levelCount} levels with types:`, types)
 
-    types.forEach(type => {
-      prompts[type] = buildPrompt(type, theme, prompt)
-    })
-
-    console.log('Generating images with prompts:', prompts)
-
-    // 串行生成所有类型的图片，添加延迟以避免速率限制
-    const data: Record<string, string> = {}
-    
-    for (let i = 0; i < types.length; i++) {
-      const type = types[i]
-      
-      // 在生成多个图像时添加延迟（除了第一个）
-      if (i > 0) {
-        const delay = 1000 + Math.random() * 1000 // 1-2秒随机延迟
-        console.log(`[${new Date().toISOString()}] Adding ${delay}ms delay before generating ${type} image`)
-        await new Promise(resolve => setTimeout(resolve, delay))
-      }
-      
-      const originalUrl = await callDashScopeAPI(prompts[type], type, getSizeForType(type))
+    // 生成角色图像（只需要一个）
+    let characterUrl = ''
+    if (types.includes('character')) {
+      const characterPrompt = buildPrompt('character', theme, prompt)
+      console.log('Generating character image...')
+      const originalUrl = await callDashScopeAPI(characterPrompt, 'character', getSizeForType('character'))
       
       // 对角色图像自动进行抠图处理
-      let finalUrl = originalUrl
-      if (type === 'character') {
-        console.log(`[${new Date().toISOString()}] Auto-processing character image for background removal`)
-        finalUrl = await processImageCutout(originalUrl, type)
-      }
+      console.log(`[${new Date().toISOString()}] Auto-processing character image for background removal`)
+      characterUrl = await processImageCutout(originalUrl, 'character')
+    }
+
+    // 生成多个关卡的背景、地面和障碍物
+    const levels = []
+    const memoryUsage = process.memoryUsage()
+    console.log(`Initial memory usage: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`)
+    
+    for (let levelIndex = 0; levelIndex < levelCount; levelIndex++) {
+      const levelStartTime = Date.now()
+      const levelId = `level-${levelIndex + 1}`
+      console.log(`Generating level ${levelIndex + 1}/${levelCount}...`)
       
-      data[`${type}Url`] = finalUrl
+      try {
+        const level: any = {
+          id: levelId,
+          obstacles: generateObstacleLayout(levelId)
+        }
+        
+        // 为每个关卡生成背景、地面、障碍物图像
+        const levelTypes = types.filter(type => type !== 'character')
+        
+        for (let i = 0; i < levelTypes.length; i++) {
+          const type = levelTypes[i]
+          
+          // 动态调整延迟：关卡越多，延迟越长
+          if (levelIndex > 0 || i > 0) {
+            const delay = Math.min(1000 + (levelCount - 3) * 200 + Math.random() * 1000, 3000)
+            console.log(`[${new Date().toISOString()}] Adding ${delay}ms delay before generating ${type} image for ${levelId}`)
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+          
+          const typePrompt = buildPrompt(type, theme, `${prompt}, level ${levelIndex + 1} variation`)
+          const originalUrl = await callDashScopeAPI(typePrompt, type, getSizeForType(type))
+          
+          // 对地面和障碍物图像进行抠图处理
+          let finalUrl = originalUrl
+          if (type === 'ground' || type === 'obstacle') {
+            console.log(`[${new Date().toISOString()}] Auto-processing ${type} image for ${levelId}`)
+            finalUrl = await processImageCutout(originalUrl, type)
+          }
+          
+          level[`${type}Url`] = finalUrl
+        }
+        
+        levels.push(level)
+        
+        const levelEndTime = Date.now()
+        console.log(`Level ${levelIndex + 1} completed in ${(levelEndTime - levelStartTime) / 1000}s`)
+        
+        // 性能监控：检查内存使用情况
+        if (levelIndex % 2 === 0 && levelIndex > 0) {
+          const currentMemory = process.memoryUsage()
+          console.log(`Memory usage after level ${levelIndex + 1}: ${Math.round(currentMemory.heapUsed / 1024 / 1024)}MB`)
+          
+          // 如果内存使用过高，强制垃圾回收
+          if (currentMemory.heapUsed > memoryUsage.heapUsed * 2) {
+            if (global.gc) {
+              global.gc()
+              console.log('Forced garbage collection due to high memory usage')
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error generating level ${levelIndex + 1}:`, error)
+        // 如果单个关卡生成失败，使用默认值继续
+        levels.push({
+          id: levelId,
+          obstacles: generateObstacleLayout(levelId)
+        })
+      }
     }
 
     // 返回生成结果
+    const endTime = Date.now()
+    const totalTime = (endTime - startTime) / 1000
+    const finalMemory = process.memoryUsage()
+    
+    console.log(`Generation completed in ${totalTime.toFixed(2)}s for ${levelCount} levels`)
+    console.log(`Final memory usage: ${Math.round(finalMemory.heapUsed / 1024 / 1024)}MB`)
+    console.log(`Memory delta: ${Math.round((finalMemory.heapUsed - memoryUsage.heapUsed) / 1024 / 1024)}MB`)
+    
     const response = {
       success: true,
-      data,
+      data: {
+        characterUrl,
+        levels
+      },
       generationId: `gen_${Date.now()}`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      metadata: {
+        generationTime: totalTime,
+        levelCount,
+        memoryUsed: Math.round(finalMemory.heapUsed / 1024 / 1024)
+      }
     }
 
     return NextResponse.json(response)
