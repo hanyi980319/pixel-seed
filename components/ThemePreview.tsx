@@ -84,26 +84,50 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({
       return
     }
 
-    const suffix = imageUrl.slice(imageUrl.lastIndexOf('.')) || '.png'
-    const filename = `${imageType}-${Date.now()}${suffix}`
-
-    fetch(imageUrl)
-      .then((response) => response.blob())
-      .then((blob) => {
-        const blobUrl = URL.createObjectURL(new Blob([blob]))
+    try {
+      const filename = `${imageType}-${Date.now()}.png`
+      
+      // 检查是否是base64格式的图片
+      if (imageUrl.startsWith('data:image/')) {
+        // 直接下载base64图片
         const link = document.createElement('a')
-        link.href = blobUrl
+        link.href = imageUrl
         link.download = filename
         document.body.appendChild(link)
         link.click()
-        URL.revokeObjectURL(blobUrl)
-        link.remove()
+        document.body.removeChild(link)
         message.success(`${imageType} image downloaded successfully!`)
-      })
-      .catch((error) => {
-        console.error('Error downloading image:', error)
-        message.error(`Error downloading ${imageType} image`)
-      })
+      } else {
+        // 处理普通URL图片
+        fetch(imageUrl)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok')
+            }
+            return response.blob()
+          })
+          .then((blob) => {
+            // 确保blob是图片类型
+            const imageBlob = new Blob([blob], { type: 'image/png' })
+            const blobUrl = URL.createObjectURL(imageBlob)
+            const link = document.createElement('a')
+            link.href = blobUrl
+            link.download = filename
+            document.body.appendChild(link)
+            link.click()
+            URL.revokeObjectURL(blobUrl)
+            link.remove()
+            message.success(`${imageType} image downloaded successfully!`)
+          })
+          .catch((error) => {
+            console.error('Error downloading image:', error)
+            message.error(`Error downloading ${imageType} image`)
+          })
+      }
+    } catch (error) {
+      console.error('Error in download function:', error)
+      message.error(`Error downloading ${imageType} image`)
+    }
   }
 
   // 自定义工具栏渲染函数
